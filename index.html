@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Калькулятор стоимости — Kinescope</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* UI Kit colours */
+      --bg:        #FCFCF7;   /* страница kinescope.ru */
+      --card:      #FFFFFF;   /* White — card surface */
+      --border:    #EFEDEA;   /* Dark beige — dividers / borders */
+      --text:      #000000;   /* Black — primary text */
+      --text-sec:  rgba(0,0,0,.4); /* Black 40% — secondary text */
+      --accent:    #6B61FC;   /* Violet — interactive elements */
+      --not-black: #1A1A1A;   /* Not-black — button bg */
+
+      --track-empty: #EFEDEA;
+      --radius: 20px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 48px 24px 56px;
+    }
+
+    /* ── Layout ── */
+    .calc-body {
+      display: grid;
+      grid-template-columns: 1fr 308px;
+      gap: 16px;
+      align-items: stretch;   /* равная высота обоих блоков */
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* ── Shared card ── */
+    .sliders-panel,
+    .summary-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Sliders panel ── */
+    .sliders-panel {
+      padding: 36px 32px;
+      justify-content: space-between;
+      gap: 32px;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .slider-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .slider-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* Info icon */
+    .info-icon {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      color: var(--text-sec);
+      font-size: 10px;
+      font-weight: 700;
+      cursor: help;
+      flex-shrink: 0;
+      line-height: 1;
+      user-select: none;
+    }
+
+    .info-icon .tooltip {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-4px);
+      transition: opacity .18s ease, transform .18s ease;
+      position: absolute;
+      left: 50%;
+      translate: -50%;
+      bottom: calc(100% + 8px);
+      background: #000000;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.5;
+      padding: 10px 14px;
+      border-radius: 10px;
+      width: 220px;
+      z-index: 20;
+      box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    }
+
+    .info-icon .tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%; left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: var(--not-black);
+    }
+
+    .info-icon:hover .tooltip {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .slider-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent);
+      min-width: 100px;
+      text-align: right;
+    }
+
+    /* Range input — custom fill via CSS var */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 3px;
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+      background: linear-gradient(
+        to right,
+        var(--accent) 0%,
+        var(--accent) var(--fill, 0%),
+        var(--track-empty) var(--fill, 0%),
+        var(--track-empty) 100%
+      );
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 2px 8px rgba(107,97,252,.35);
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover,
+    input[type="range"]:active::-webkit-slider-thumb {
+      transform: scale(1.15);
+      box-shadow: 0 3px 12px rgba(107,97,252,.45);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      box-shadow: 0 2px 8px rgba(107,97,252,.35);
+      cursor: pointer;
+    }
+
+    /* Tick marks */
+    .ticks {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 1px;
+    }
+
+    .tick {
+      font-size: 10px;
+      font-weight: 500;
+      color: rgba(0,0,0,.25);
+    }
+
+    /* ── Summary card ── */
+    .summary-card {
+      padding: 32px 28px;
+    }
+
+    /* ── Callout box (общий стиль для free и custom) ── */
+    .callout {
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .callout strong { font-weight: 600; }
+
+    .callout-green {
+      background: #EDFAF4;
+      border: 1.5px solid #7ECBA1;
+      color: #0A5C35;
+    }
+
+    .callout-orange {
+      background: #FFF7ED;
+      border: 1.5px solid #FDB87C;
+      color: #7C3A0A;
+    }
+
+    /* ── Free state (all zeros) ── */
+    .free-state {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+    }
+    .free-state.visible { display: flex; }
+
+    .free-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-sec);
+      margin-bottom: 12px;
+    }
+
+    .free-title {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      line-height: 1;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .free-sub {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-sec);
+      margin-bottom: 24px;
+    }
+
+    .free-features {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 0;
+    }
+
+    .free-feature {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 14px;
+    }
+
+    .free-feature-label {
+      color: var(--text-sec);
+      font-weight: 400;
+    }
+
+    .free-feature-value {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* ── Paid state ── */
+    .paid-state {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+    }
+    .paid-state.visible { display: flex; }
+
+    /* Price */
+    .price-block { margin-bottom: 0; }
+
+    .price-main {
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .price-main.custom {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 0;
+      line-height: 1.35;
+    }
+
+    .price-period {
+      margin-top: 6px;
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-sec);
+    }
+
+    .price-min-note {
+      display: none;
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text-sec);
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+
+    /* Breakdown */
+    .breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+
+    .breakdown-label { color: var(--text-sec); font-weight: 400; }
+
+    .breakdown-value { font-weight: 600; color: var(--text); }
+
+    .breakdown-value.custom-val {
+      font-weight: 400;
+      font-style: italic;
+      color: var(--text-sec);
+    }
+
+    /* Spacer to push CTA to bottom */
+    .card-spacer { flex: 1; }
+
+    /* CTA button */
+    .cta-btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background: var(--not-black);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background .2s ease, transform .1s ease;
+    }
+
+    .cta-btn:hover { background: #2a2a2a; }
+    .cta-btn:active { transform: scale(.98); }
+
+    /* Responsive */
+    @media (max-width: 680px) {
+      body { padding: 32px 16px 40px; }
+      .calc-header h1 { font-size: 28px; }
+      .calc-body { grid-template-columns: 1fr; }
+      .sliders-panel { padding: 28px 20px; }
+      .summary-card { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="calc-body">
+
+  <!-- Sliders -->
+  <div class="sliders-panel">
+
+    <div class="slider-group">
+      <div class="slider-label-row">
+        <div class="slider-label">
+          CDN-трафик
+          <span class="info-icon">i<span class="tooltip">Исходящий трафик при воспроизведении видео — сколько данных получают ваши зрители за месяц</span></span>
+        </div>
+        <div class="slider-value" id="cdn-val">1 000 ГБ</div>
+      </div>
+      <input type="range" id="cdn-slider" min="0" max="19" value="6">
+      <div class="ticks">
+        <span class="tick">0</span>
+        <span class="tick">1 000</span>
+        <span class="tick">6 000</span>
+        <span class="tick">21 000</span>
+        <span class="tick">50 000+ ГБ</span>
+      </div>
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-label-row">
+        <div class="slider-label">
+          Хранилище
+          <span class="info-icon">i<span class="tooltip">Суммарный объём хранимых видеофайлов на серверах Kinescope</span></span>
+        </div>
+        <div class="slider-value" id="storage-val">500 ГБ</div>
+      </div>
+      <input type="range" id="storage-slider" min="0" max="15" value="5">
+      <div class="ticks">
+        <span class="tick">0</span>
+        <span class="tick">1 000</span>
+        <span class="tick">21 000+ ГБ</span>
+      </div>
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-label-row">
+        <div class="slider-label">
+          Транскодирование
+          <span class="info-icon">i<span class="tooltip">Время конвертации загружаемых видео в разные форматы и качества воспроизведения</span></span>
+        </div>
+        <div class="slider-value" id="trans-val">10 000 мин</div>
+      </div>
+      <input type="range" id="trans-slider" min="0" max="10" value="4">
+      <div class="ticks">
+        <span class="tick">0</span>
+        <span class="tick">10 000</span>
+        <span class="tick">60 000+ мин</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-card">
+
+    <!-- Состояние: все нули → бесплатный тариф -->
+    <div class="free-state visible" id="free-state">
+      <div class="callout callout-green">
+        Ваши объёмы подходят под <strong>Бесплатный тариф</strong> — попробуйте без оплаты!
+      </div>
+
+      <div class="free-title">0 ₽</div>
+      <div class="free-sub">навсегда, без карты</div>
+
+      <div class="divider"></div>
+
+      <div class="free-features">
+        <div class="free-feature">
+          <span class="free-feature-label">CDN-трафик</span>
+          <span class="free-feature-value">200 ГБ / мес</span>
+        </div>
+        <div class="free-feature">
+          <span class="free-feature-label">Хранилище видео</span>
+          <span class="free-feature-value">до 100 мин</span>
+        </div>
+        <div class="free-feature">
+          <span class="free-feature-label">Лайв-трансляция</span>
+          <span class="free-feature-value">до 20 мин</span>
+        </div>
+        <div class="free-feature">
+          <span class="free-feature-label">Зрителей лайв</span>
+          <span class="free-feature-value">до 20</span>
+        </div>
+        <div class="free-feature">
+          <span class="free-feature-label">Пользователей</span>
+          <span class="free-feature-value">2</span>
+        </div>
+      </div>
+
+      <div class="card-spacer"></div>
+      <div class="divider"></div>
+      <a href="https://kinescope.ru/signup" target="_blank" rel="noopener noreferrer" class="cta-btn">Попробовать бесплатно</a>
+    </div>
+
+    <!-- Состояние: платный расчёт -->
+    <div class="paid-state" id="paid-state">
+      <div class="callout callout-orange" id="custom-callout" style="display:none">
+        Нужен <strong>индивидуальный расчёт</strong> — оставьте заявку, мы подберём условия
+      </div>
+
+      <div class="price-block" id="price-block">
+        <div class="price-main" id="price-main"></div>
+        <div class="price-period" id="price-period">в месяц</div>
+        <div class="price-min-note" id="min-note">Минимальный ежемесячный платёж — 500 ₽</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="breakdown">
+        <div class="breakdown-row">
+          <span class="breakdown-label">CDN-трафик</span>
+          <span class="breakdown-value" id="cdn-cost"></span>
+        </div>
+        <div class="breakdown-row">
+          <span class="breakdown-label">Хранилище</span>
+          <span class="breakdown-value" id="storage-cost"></span>
+        </div>
+        <div class="breakdown-row">
+          <span class="breakdown-label">Транскодирование</span>
+          <span class="breakdown-value" id="trans-cost"></span>
+        </div>
+      </div>
+
+      <div class="card-spacer"></div>
+      <div class="divider"></div>
+      <a href="https://kinescope.ru/signup" target="_blank" rel="noopener noreferrer" class="cta-btn" id="cta-main">Начать бесплатно</a>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  const CDN_STEPS   = [0,100,200,300,500,750,1000,1500,2000,3000,5000,6000,8000,10000,15000,21000,25000,30000,40000,50000];
+  const STOR_STEPS  = [0,50,100,150,200,500,750,1000,1500,2000,3000,5000,8000,10000,15000,21000];
+  const TRANS_STEPS = [0,1000,5000,10000,20000,30000,40000,50000,55000,60000,65000];
+
+  const MIN_PAYMENT = 500;
+  const FREE_CDN = 200, FREE_STOR = 10;
+
+  function calcCDN(gb) {
+    if (!gb) return 0;
+    if (gb > 50000) return Infinity;
+    let c = 0, r = gb;
+    const t1 = Math.min(r, 1000);  c += t1 * 1.9; r -= t1;
+    const t2 = Math.min(r, 5000);  c += t2 * 1.4; r -= t2;
+    const t3 = Math.min(r, 15000); c += t3 * 1.1; r -= t3;
+    c += Math.min(r, 29000) * 0.7;
+    return c;
+  }
+
+  function calcStorage(gb) {
+    if (!gb) return 0;
+    if (gb > 21000) return Infinity;
+    let c = 0, r = gb;
+    const t1 = Math.min(r, 1000); c += t1 * 1.9; r -= t1;
+    c += r * 1.5;
+    return c;
+  }
+
+  function calcTranscoding(min) {
+    if (!min) return 0;
+    if (min > 60000) return Infinity;
+    return min * 0.8;
+  }
+
+  const $ = id => document.getElementById(id);
+  const cdnSlider     = $('cdn-slider');
+  const storageSlider = $('storage-slider');
+  const transSlider   = $('trans-slider');
+
+  function fmt(n) { return n.toLocaleString('ru-RU'); }
+  function rub(n) { return fmt(Math.round(n)) + ' ₽'; }
+
+  function setFill(el, idx, steps) {
+    el.style.setProperty('--fill', ((idx / (steps.length - 1)) * 100) + '%');
+  }
+
+  function update() {
+    const ci = +cdnSlider.value, si = +storageSlider.value, ti = +transSlider.value;
+    const cdnGB = CDN_STEPS[ci], storGB = STOR_STEPS[si], transMin = TRANS_STEPS[ti];
+
+    $('cdn-val').textContent     = fmt(cdnGB)    + ' ГБ';
+    $('storage-val').textContent = fmt(storGB)   + ' ГБ';
+    $('trans-val').textContent   = fmt(transMin) + ' мин';
+
+    setFill(cdnSlider,     ci, CDN_STEPS);
+    setFill(storageSlider, si, STOR_STEPS);
+    setFill(transSlider,   ti, TRANS_STEPS);
+
+    const allZero = cdnGB === 0 && storGB === 0 && transMin === 0;
+
+    $('free-state').classList.toggle('visible', allZero);
+    $('paid-state').classList.toggle('visible', !allZero);
+
+    if (allZero) return;
+
+    const c1 = calcCDN(cdnGB), c2 = calcStorage(storGB), c3 = calcTranscoding(transMin);
+    const isCustom = [c1, c2, c3].some(v => v === Infinity);
+
+    const setLine = (id, v) => {
+      const el = $(id);
+      el.textContent = v === Infinity ? 'индивидуально' : rub(v);
+      el.className = 'breakdown-value' + (v === Infinity ? ' custom-val' : '');
+    };
+    setLine('cdn-cost',     c1);
+    setLine('storage-cost', c2);
+    setLine('trans-cost',   c3);
+
+    const pm = $('price-main'), pp = $('price-period'), mn = $('min-note'), cta = $('cta-main');
+    const customCallout = $('custom-callout'), priceBlock = $('price-block');
+
+    if (isCustom) {
+      customCallout.style.display = 'block';
+      priceBlock.style.display    = 'none';
+      cta.textContent = 'Запросить расчёт';
+      cta.href = 'https://kinescope.ru/demo';
+    } else {
+      customCallout.style.display = 'none';
+      priceBlock.style.display    = 'block';
+      const sum = c1 + c2 + c3;
+      pm.textContent = '≈ ' + rub(Math.max(sum, MIN_PAYMENT));
+      pm.className = 'price-main';
+      pp.textContent = 'в месяц';
+      mn.style.display = (sum > 0 && sum < MIN_PAYMENT) ? 'block' : 'none';
+      cta.textContent = 'Начать бесплатно';
+      cta.href = 'https://kinescope.ru/signup';
+    }
+  }
+
+  cdnSlider.max     = CDN_STEPS.length   - 1;
+  storageSlider.max = STOR_STEPS.length  - 1;
+  transSlider.max   = TRANS_STEPS.length - 1;
+
+  // Стартуем с нулей
+  cdnSlider.value = storageSlider.value = transSlider.value = 0;
+
+  update();
+  cdnSlider.addEventListener('input', update);
+  storageSlider.addEventListener('input', update);
+  transSlider.addEventListener('input', update);
+</script>
+
+<script>
+  // ── Auto-resize для iframe через postMessage ──
+  function sendHeight() {
+    const h = document.documentElement.scrollHeight;
+    window.parent.postMessage({ type: 'iframeResize', height: h }, '*');
+  }
+
+  // Отправляем при загрузке и при любом изменении DOM/шрифтов
+  sendHeight();
+  window.addEventListener('load', sendHeight);
+
+  const ro = new ResizeObserver(sendHeight);
+  ro.observe(document.body);
+</script>
+</body>
+</html>

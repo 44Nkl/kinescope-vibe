@@ -12,7 +12,7 @@
 
     :root {
       /* UI Kit colours */
-      --bg:        #FCFCF7;   /* страница kinescope.ru */
+      --bg:        transparent; /* прозрачный — наследует фон родительской страницы */
       --card:      #FFFFFF;   /* White — card surface */
       --border:    #EFEDEA;   /* Dark beige — dividers / borders */
       --text:      #000000;   /* Black — primary text */
@@ -533,7 +533,7 @@
   const TRANS_STEPS = [0,1000,5000,10000,20000,30000,40000,50000,55000,60000,65000];
 
   const MIN_PAYMENT = 500;
-  const FREE_CDN = 200, FREE_STOR = 10;
+  const FREE_CDN = 200, FREE_STOR = 10; // 10 ГБ ≈ 100 мин видео
 
   function calcCDN(gb) {
     if (!gb) return 0;
@@ -585,14 +585,17 @@
     setFill(storageSlider, si, STOR_STEPS);
     setFill(transSlider,   ti, TRANS_STEPS);
 
-    const allZero = cdnGB === 0 && storGB === 0 && transMin === 0;
+    const isFree = cdnGB <= FREE_CDN && storGB <= FREE_STOR && transMin === 0;
 
-    $('free-state').classList.toggle('visible', allZero);
-    $('paid-state').classList.toggle('visible', !allZero);
+    $('free-state').classList.toggle('visible', isFree);
+    $('paid-state').classList.toggle('visible', !isFree);
 
-    if (allZero) return;
+    if (isFree) return;
 
-    const c1 = calcCDN(cdnGB), c2 = calcStorage(storGB), c3 = calcTranscoding(transMin);
+    // Вычитаем бесплатные объёмы перед расчётом
+    const c1 = calcCDN(Math.max(0, cdnGB - FREE_CDN));
+    const c2 = calcStorage(Math.max(0, storGB - FREE_STOR));
+    const c3 = calcTranscoding(transMin);
     const isCustom = [c1, c2, c3].some(v => v === Infinity);
 
     const setLine = (id, v) => {

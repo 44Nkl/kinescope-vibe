@@ -244,15 +244,19 @@
 
     /* ── Tick marks ── */
     .ticks {
-      display: flex;
-      justify-content: space-between;
-      padding: 0 1px;
+      position: relative;
+      height: 14px;
     }
     .tick {
+      position: absolute;
+      transform: translateX(-50%);
       font-size: 10px;
       font-weight: 500;
       color: rgba(0,0,0,.25);
+      white-space: nowrap;
     }
+    .tick:first-child { transform: none; }
+    .tick:last-child  { transform: translateX(-100%); }
 
     /* ── Кнопка поддержки ── */
     .support-hint {
@@ -292,6 +296,11 @@
       background: #EDFAF4;
       border: 1.5px solid #7ECBA1;
       color: #0A5C35;
+    }
+    .callout-neutral {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--text-sec);
     }
     .callout-orange {
       background: #FFF7ED;
@@ -468,13 +477,13 @@
           <span class="slider-unit">ГБ</span>
         </div>
       </div>
-      <input type="range" id="cdn-slider" min="0" max="19" value="0">
+      <input type="range" id="cdn-slider" min="0" max="100" value="0">
       <div class="ticks">
-        <span class="tick">0</span>
-        <span class="tick">1 000</span>
-        <span class="tick">6 000</span>
-        <span class="tick">21 000</span>
-        <span class="tick">50 000+ ГБ</span>
+        <span class="tick" style="left:0%">0</span>
+        <span class="tick" style="left:25%">1 000</span>
+        <span class="tick" style="left:50%">5 000</span>
+        <span class="tick" style="left:75%">10 000</span>
+        <span class="tick" style="left:100%">50 000 ГБ</span>
       </div>
     </div>
 
@@ -489,12 +498,13 @@
           <span class="slider-unit">ГБ</span>
         </div>
       </div>
-      <input type="range" id="storage-slider" min="0" max="17" value="0">
+      <input type="range" id="storage-slider" min="0" max="100" value="0">
       <div class="ticks">
-        <span class="tick">0</span>
-        <span class="tick">1 000</span>
-        <span class="tick">21 000</span>
-        <span class="tick">50 000+ ГБ</span>
+        <span class="tick" style="left:0%">0</span>
+        <span class="tick" style="left:25%">1 000</span>
+        <span class="tick" style="left:50%">5 000</span>
+        <span class="tick" style="left:75%">10 000</span>
+        <span class="tick" style="left:100%">50 000 ГБ</span>
       </div>
     </div>
 
@@ -509,11 +519,13 @@
           <span class="slider-unit">мин</span>
         </div>
       </div>
-      <input type="range" id="trans-slider" min="0" max="10" value="0">
+      <input type="range" id="trans-slider" min="0" max="100" value="0">
       <div class="ticks">
-        <span class="tick">0</span>
-        <span class="tick">10 000</span>
-        <span class="tick">60 000+ мин</span>
+        <span class="tick" style="left:0%">0</span>
+        <span class="tick" style="left:25%">1 000</span>
+        <span class="tick" style="left:50%">5 000</span>
+        <span class="tick" style="left:75%">10 000</span>
+        <span class="tick" style="left:100%">50 000 мин</span>
       </div>
     </div>
 
@@ -529,14 +541,21 @@
 
     <!-- Бесплатный тариф -->
     <div class="free-state visible" id="free-state">
-      <div class="callout callout-green">
+      <div class="callout callout-green" id="callout-free" style="display:none">
         Ваши объёмы подходят под <strong>Бесплатный тариф</strong> — попробуйте без оплаты!
       </div>
+      <div class="callout callout-neutral" id="callout-neutral">
+        Выберите объёмы, чтобы рассчитать стоимость
+      </div>
 
-      <div class="free-title">0 ₽</div>
-      <div class="free-sub">навсегда, без карты</div>
+      <div id="free-price-block">
+        <div class="free-title">0 ₽</div>
+        <div class="free-sub">навсегда, без карты</div>
+      </div>
 
       <div class="divider"></div>
+
+      <div class="free-label">На бесплатном тарифе</div>
 
       <div class="free-features">
         <div class="free-feature">
@@ -605,9 +624,32 @@
 </div>
 
 <script>
-  const CDN_STEPS   = [0,100,200,300,500,750,1000,1500,2000,3000,5000,6000,8000,10000,15000,21000,25000,30000,40000,50000];
-  const STOR_STEPS  = [0,50,100,150,200,500,750,1000,1500,2000,3000,5000,8000,10000,15000,21000,30000,50000];
-  const TRANS_STEPS = [0,1000,5000,10000,20000,30000,40000,50000,55000,60000,65000];
+  // Тики и их позиции на слайдере (0–100)
+  // Каждый сегмент линейно растянут на 25% → 500 ровно посередине между 0 и 1000
+  const TICK_VALS = [0, 1000, 5000, 10000, 50000];
+  const TICK_POS  = [0,   25,   50,    75,   100];
+
+  function posToVal(pos) {
+    pos = Math.max(0, Math.min(100, pos));
+    for (let i = 0; i < TICK_POS.length - 1; i++) {
+      if (pos <= TICK_POS[i + 1]) {
+        const t = (pos - TICK_POS[i]) / (TICK_POS[i + 1] - TICK_POS[i]);
+        return Math.round(TICK_VALS[i] + t * (TICK_VALS[i + 1] - TICK_VALS[i]));
+      }
+    }
+    return TICK_VALS[TICK_VALS.length - 1];
+  }
+
+  function valToPos(val) {
+    val = Math.max(0, val);
+    for (let i = 0; i < TICK_VALS.length - 1; i++) {
+      if (val <= TICK_VALS[i + 1]) {
+        const t = (val - TICK_VALS[i]) / (TICK_VALS[i + 1] - TICK_VALS[i]);
+        return Math.round(TICK_POS[i] + t * (TICK_POS[i + 1] - TICK_POS[i]));
+      }
+    }
+    return 100;
+  }
 
   const MIN_PAYMENT = 500;
   const FREE_CDN  = 200;  // ГБ — лимит бесплатного тарифа
@@ -654,33 +696,27 @@
   function fmt(n) { return n.toLocaleString('ru-RU'); }
   function rub(n) { return fmt(Math.round(n)) + ' ₽'; }
 
-  function setFill(el, idx, steps) {
-    el.style.setProperty('--fill', ((idx / (steps.length - 1)) * 100) + '%');
-  }
-
-  function snapToStep(val, steps) {
-    let bestIdx = 0, bestDist = Infinity;
-    for (let i = 0; i < steps.length; i++) {
-      const d = Math.abs(steps[i] - val);
-      if (d < bestDist) { bestDist = d; bestIdx = i; }
-    }
-    return bestIdx;
+  function setFill(el) {
+    el.style.setProperty('--fill', el.value + '%');
   }
 
   function parseInput(raw) {
     return Math.max(0, Math.round(parseFloat(String(raw).replace(/\s/g, '').replace(',', '.')) || 0));
   }
 
-  function syncSlider(val, steps, slider) {
-    const idx = snapToStep(val, steps);
-    slider.value = idx;
-    setFill(slider, idx, steps);
+  function syncSlider(val, slider) {
+    slider.value = valToPos(val);
+    setFill(slider);
   }
 
   function update() {
+    const allZero    = cdnGB === 0 && storGB === 0 && transMin === 0;
     const withinFree = cdnGB <= FREE_CDN && storGB <= FREE_STOR && transMin === 0;
     $('free-state').classList.toggle('visible', withinFree);
     $('paid-state').classList.toggle('visible', !withinFree);
+    $('callout-free').style.display    = (!allZero && withinFree) ? 'block' : 'none';
+    $('callout-neutral').style.display = allZero ? 'block' : 'none';
+    $('free-price-block').style.display = allZero ? 'none' : 'block';
     if (withinFree) return;
 
     const c1 = calcCDN(cdnGB), c2 = calcStorage(storGB), c3 = calcTranscoding(transMin);
@@ -718,38 +754,38 @@
 
   // ── Слайдер → значение + обновить инпут ──
   cdnSlider.addEventListener('input', () => {
-    cdnGB = CDN_STEPS[+cdnSlider.value];
+    cdnGB = posToVal(+cdnSlider.value);
     cdnInput.value = fmt(cdnGB);
-    setFill(cdnSlider, +cdnSlider.value, CDN_STEPS);
+    setFill(cdnSlider);
     update();
   });
 
   storageSlider.addEventListener('input', () => {
-    storGB = STOR_STEPS[+storageSlider.value];
+    storGB = posToVal(+storageSlider.value);
     storageInput.value = fmt(storGB);
-    setFill(storageSlider, +storageSlider.value, STOR_STEPS);
+    setFill(storageSlider);
     update();
   });
 
   transSlider.addEventListener('input', () => {
-    transMin = TRANS_STEPS[+transSlider.value];
+    transMin = posToVal(+transSlider.value);
     transInput.value = fmt(transMin);
-    setFill(transSlider, +transSlider.value, TRANS_STEPS);
+    setFill(transSlider);
     update();
   });
 
-  // ── Инпут → значение + snap слайдера ──
-  function applyInput(input, steps, slider, setVal) {
+  // ── Инпут → значение + позиция слайдера ──
+  function applyInput(input, slider, setVal) {
     const val = parseInput(input.value);
     setVal(val);
     input.value = fmt(val);
-    syncSlider(val, steps, slider);
+    syncSlider(val, slider);
     update();
   }
 
-  cdnInput.addEventListener('change',     () => applyInput(cdnInput,     CDN_STEPS,   cdnSlider,     v => cdnGB   = v));
-  storageInput.addEventListener('change', () => applyInput(storageInput,  STOR_STEPS,  storageSlider, v => storGB  = v));
-  transInput.addEventListener('change',   () => applyInput(transInput,    TRANS_STEPS, transSlider,   v => transMin = v));
+  cdnInput.addEventListener('change',     () => applyInput(cdnInput,     cdnSlider,     v => cdnGB    = v));
+  storageInput.addEventListener('change', () => applyInput(storageInput,  storageSlider, v => storGB   = v));
+  transInput.addEventListener('change',   () => applyInput(transInput,    transSlider,   v => transMin = v));
 
   // Enter = применить значение
   [cdnInput, storageInput, transInput].forEach(inp => {
@@ -758,16 +794,14 @@
   });
 
   // ── Init ──
-  cdnSlider.max     = CDN_STEPS.length   - 1;
-  storageSlider.max = STOR_STEPS.length  - 1;
-  transSlider.max   = TRANS_STEPS.length - 1;
+  cdnSlider.max = storageSlider.max = transSlider.max = 100;
 
   cdnSlider.value = storageSlider.value = transSlider.value = 0;
   cdnInput.value = storageInput.value = transInput.value = '0';
 
-  setFill(cdnSlider,     0, CDN_STEPS);
-  setFill(storageSlider, 0, STOR_STEPS);
-  setFill(transSlider,   0, TRANS_STEPS);
+  setFill(cdnSlider);
+  setFill(storageSlider);
+  setFill(transSlider);
 
   update();
 </script>

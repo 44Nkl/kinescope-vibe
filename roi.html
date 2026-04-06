@@ -142,7 +142,18 @@
             line-height: 1.2;
         }
 
-        /* === ПОЛЕ ВВОДА (стиль как slider-value-input в тарифном калькуляторе) === */
+        /* === ГРУППА ПОЛЯ — подсветка при фокусе === */
+        .kinescope-roi-calculator .krc-form-group {
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin: -10px -12px;
+            transition: background .15s ease;
+        }
+        .kinescope-roi-calculator .krc-form-group:focus-within {
+            background: rgba(107, 97, 252, 0.05);
+        }
+
+        /* === ПОЛЕ ВВОДА === */
         .kinescope-roi-calculator .krc-input {
             font-family: 'TT Hoves Pro Compact', sans-serif;
             font-size: 16px;
@@ -150,7 +161,7 @@
             color: var(--accent);
             width: 100%;
             border: none;
-            border-bottom: 1.5px solid transparent;
+            border-bottom: 1.5px solid var(--border);
             background: transparent;
             outline: none;
             padding: 4px 0;
@@ -167,7 +178,7 @@
             outline: none;
         }
         .kinescope-roi-calculator .krc-input::placeholder {
-            color: var(--border);
+            color: rgba(0,0,0,.15);
             font-weight: 400;
         }
 

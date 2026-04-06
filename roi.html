@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Калькулятор ROI — Kinescope</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #FCFCF7;
+      padding: 48px 24px 56px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Калькулятор ROI для встраивания в Webflow/Tilda через Embed блок 2.0 -->
+<div class="kinescope-roi-calculator">
+    <style>
+        /* === ШРИФТ: TT Hoves Pro Compact (пути относительно страницы размещения) === */
+        @font-face {
+            font-family: 'TT Hoves Pro Compact';
+            src: url('fonts/TT_Hoves_Pro_Compact_Regular.woff2') format('woff2'),
+                 url('fonts/TT_Hoves_Pro_Compact_Regular.woff') format('woff');
+            font-weight: 400;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'TT Hoves Pro Compact';
+            src: url('fonts/TT_Hoves_Pro_Compact_Medium.woff2') format('woff2'),
+                 url('fonts/TT_Hoves_Pro_Compact_Medium.woff') format('woff');
+            font-weight: 500;
+            font-style: normal;
+        }
+
+        /* === CSS ПЕРЕМЕННЫЕ === */
+        .kinescope-roi-calculator {
+            --bg:        #FCFCF7;
+            --card:      #FFFFFF;
+            --border:    #EFEDEA;
+            --text:      #000000;
+            --text-sec:  rgba(0,0,0,.4);
+            --accent:    #6B61FC;
+            --not-black: #1A1A1A;
+            --radius:    20px;
+
+            font-family: 'TT Hoves Pro Compact', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            background: transparent;
+            line-height: 1.2;
+        }
+
+        .kinescope-roi-calculator * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* === КАРТОЧКА === */
+        .kinescope-roi-calculator .krc-card {
+            background: var(--card);
+            border-radius: var(--radius);
+        }
+
+        /* === ШАПКА === */
+        .kinescope-roi-calculator .krc-header {
+            padding: 36px 32px 0;
+        }
+
+        .kinescope-roi-calculator .krc-header h2 {
+            font-family: 'TT Hoves Pro Compact', sans-serif;
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--text);
+            letter-spacing: -0.26px;
+            line-height: 0.95;
+            margin-bottom: 8px;
+        }
+
+        .kinescope-roi-calculator .krc-header p {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--text-sec);
+            line-height: 1.2;
+        }
+
+        /* === ТЕЛО === */
+        .kinescope-roi-calculator .krc-body {
+            padding: 28px 32px 36px;
+        }
+
+        /* === РАЗДЕЛИТЕЛЬ === */
+        .kinescope-roi-calculator .krc-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 20px 0;
+        }
+
+        /* === ЗАГОЛОВОК СЕКЦИИ === */
+        .kinescope-roi-calculator .krc-section-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-sec);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            line-height: 1.2;
+            margin-bottom: 16px;
+        }
+
+        .kinescope-roi-calculator .krc-form-section {
+            margin-bottom: 24px;
+        }
+
+        /* === СЕТКА ПОЛЕЙ === */
+        .kinescope-roi-calculator .krc-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px 24px;
+        }
+
+        /* === ГРУППА ПОЛЯ === */
+        .kinescope-roi-calculator .krc-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* === ЛЕЙБЛ === */
+        .kinescope-roi-calculator .krc-label {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text);
+            line-height: 1.2;
+        }
+
+        /* === ВСПОМОГАТЕЛЬНЫЙ ТЕКСТ === */
+        .kinescope-roi-calculator .krc-helper-text {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--text-sec);
+            line-height: 1.2;
+        }
+
+        /* === ПОЛЕ ВВОДА (стиль как slider-value-input в тарифном калькуляторе) === */
+        .kinescope-roi-calculator .krc-input {
+            font-family: 'TT Hoves Pro Compact', sans-serif;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--accent);
+            width: 100%;
+            border: none;
+            border-bottom: 1.5px solid transparent;
+            background: transparent;
+            outline: none;
+            padding: 4px 0;
+            transition: border-color .15s ease;
+            -moz-appearance: textfield;
+        }
+        .kinescope-roi-calculator .krc-input::-webkit-outer-spin-button,
+        .kinescope-roi-calculator .krc-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .kinescope-roi-calculator .krc-input:focus {
+            border-bottom-color: var(--accent);
+            outline: none;
+        }
+        .kinescope-roi-calculator .krc-input::placeholder {
+            color: var(--border);
+            font-weight: 400;
+        }
+
+        /* === ГРУППА КНОПОК === */
+        .kinescope-roi-calculator .krc-button-group {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        /* === КНОПКИ === */
+        .kinescope-roi-calculator .krc-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            font-family: 'TT Hoves Pro Compact', sans-serif;
+            font-size: 16px;
+            font-weight: 500;
+            line-height: 1.2;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: background .2s ease, transform .1s ease;
+            text-align: center;
+        }
+
+        /* Основная кнопка — тёмная, как CTA в тарифном калькуляторе */
+        .kinescope-roi-calculator .krc-btn-primary {
+            background: var(--not-black);
+            color: #fff;
+        }
+        .kinescope-roi-calculator .krc-btn-primary:hover  { background: #2a2a2a; }
+        .kinescope-roi-calculator .krc-btn-primary:active { transform: scale(.98); }
+
+        /* Вторичная кнопка */
+        .kinescope-roi-calculator .krc-btn-secondary {
+            background: transparent;
+            color: var(--text-sec);
+            border: 1.5px solid var(--border);
+        }
+        .kinescope-roi-calculator .krc-btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+        .kinescope-roi-calculator .krc-btn-secondary:active { transform: scale(.98); }
+
+        /* === РЕЗУЛЬТАТЫ === */
+        .kinescope-roi-calculator .krc-results {
+            display: none;
+        }
+        .kinescope-roi-calculator .krc-results.krc-show {
+            display: block;
+        }
+
+        /* === CALLOUT (как в тарифном калькуляторе) === */
+        .kinescope-roi-calculator .krc-callout {
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.2;
+            margin-bottom: 20px;
+        }
+        .kinescope-roi-calculator .krc-callout strong { font-weight: 500; }
+
+        .kinescope-roi-calculator .krc-callout-green {
+            background: #EDFAF4;
+            border: 1.5px solid #7ECBA1;
+            color: #0A5C35;
+        }
+        .kinescope-roi-calculator .krc-callout-orange {
+            background: #FFF7ED;
+            border: 1.5px solid #FDB87C;
+            color: #7C3A0A;
+        }
+        .kinescope-roi-calculator .krc-callout-neutral {
+            background: transparent;
+            border: 1.5px solid var(--border);
+            color: var(--text-sec);
+        }
+
+        /* === ГЛАВНОЕ ЗНАЧЕНИЕ ROI (как price-main в тарифном калькуляторе) === */
+        .kinescope-roi-calculator .krc-roi-value {
+            font-size: 48px;
+            font-weight: 500;
+            letter-spacing: -0.26px;
+            line-height: 0.95;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .kinescope-roi-calculator .krc-roi-sub {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--text-sec);
+            line-height: 1.2;
+        }
+
+        /* === СТРОКИ РАЗБИВКИ (как breakdown в тарифном калькуляторе) === */
+        .kinescope-roi-calculator .krc-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .kinescope-roi-calculator .krc-breakdown-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+        .kinescope-roi-calculator .krc-breakdown-label {
+            color: var(--text-sec);
+            font-weight: 400;
+        }
+        .kinescope-roi-calculator .krc-breakdown-value {
+            font-weight: 500;
+            color: var(--text);
+        }
+        .kinescope-roi-calculator .krc-breakdown-value-positive { color: #0A5C35; }
+        .kinescope-roi-calculator .krc-breakdown-value-negative { color: #7C3A0A; }
+
+        /* === АДАПТИВНОСТЬ === */
+        @media (max-width: 640px) {
+            .kinescope-roi-calculator .krc-header {
+                padding: 28px 20px 0;
+            }
+            .kinescope-roi-calculator .krc-body {
+                padding: 20px 20px 28px;
+            }
+            .kinescope-roi-calculator .krc-form-grid {
+                grid-template-columns: 1fr;
+            }
+            .kinescope-roi-calculator .krc-button-group {
+                grid-template-columns: 1fr;
+            }
+            .kinescope-roi-calculator .krc-roi-value {
+                font-size: 36px;
+            }
+        }
+    </style>
+
+    <div class="krc-card">
+
+        <!-- Заголовок -->
+        <div class="krc-header">
+            <h2>Рассчитайте ROI вашего вебинара</h2>
+            <p>Проверьте, окупаются ли ваши вложения в продающий вебинар</p>
+        </div>
+
+        <div class="krc-body">
+            <form id="krcRoiForm">
+
+                <!-- Посещаемость -->
+                <div class="krc-form-section">
+                    <div class="krc-section-title">Посещаемость вебинара</div>
+                    <div class="krc-form-grid">
+                        <div class="krc-form-group">
+                            <label class="krc-label" for="krcRegistrations">Количество регистраций</label>
+                            <input type="number" class="krc-input" id="krcRegistrations" placeholder="500" min="0" required>
+                            <div class="krc-helper-text">Зарегистрировалось на вебинар</div>
+                        </div>
+                        <div class="krc-form-group">
+                            <label class="krc-label" for="krcAttendees">Количество зрителей</label>
+                            <input type="number" class="krc-input" id="krcAttendees" placeholder="250" min="0" required>
+                            <div class="krc-helper-text">Реально присутствовало</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Конверсия и продажи -->
+                <div class="krc-form-section">
+                    <div class="krc-section-title">Конверсия и продажи</div>
+                    <div class="krc-form-grid">
+                        <div class="krc-form-group">
+                            <label class="krc-label" for="krcSalesCount">Количество продаж</label>
+                            <input type="number" class="krc-input" id="krcSalesCount" placeholder="25" min="0" required>
+                            <div class="krc-helper-text">Число совершивших покупку</div>
+                        </div>
+                        <div class="krc-form-group">
+                            <label class="krc-label" for="krcAverageCheck">Средний чек (₽)</label>
+                            <input type="number" class="krc-input" id="krcAverageCheck" placeholder="15 000" min="0" required>
+                            <div class="krc-helper-text">Стоимость продукта/услуги</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Расходы -->
+                <div class="krc-form-section">
+                    <div class="krc-section-title">Расходы на вебинар</div>
+                    <div class="krc-form-grid">
+                        <div class="krc-form-group">
+                            <label class="krc-label" for="krcAdCosts">Расходы на рекламу (₽)</label>
+                            <input type="number" class="krc-input" id="krcAdCosts" placeholder="50 000" min="0" required>
+                            <div class="krc-helper-text">Реклама и продвижение</div>
+                        </div>
+                        <div class="krc-form-group">
+                            <label class="krc-label" for="krcSpeakerCosts">Гонорар спикеров (₽)</label>
+                            <input type="number" class="krc-input" id="krcSpeakerCosts" placeholder="30 000" min="0" required>
+                            <div class="krc-helper-text">Оплата спикеров и экспертов</div>
+                        </div>
+                        <div class="krc-form-group">
+                            <label class="krc-label" for="krcPlatformCosts">Платформа и организация (₽)</label>
+                            <input type="number" class="krc-input" id="krcPlatformCosts" placeholder="10 000" min="0" required>
+                            <div class="krc-helper-text">Платформа, техподдержка, дизайн</div>
+                        </div>
+                        <div class="krc-form-group">
+                            <label class="krc-label" for="krcOtherCosts">Прочие расходы (₽)</label>
+                            <input type="number" class="krc-input" id="krcOtherCosts" placeholder="0" min="0" value="0">
+                            <div class="krc-helper-text">Дополнительные расходы</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="krc-button-group">
+                    <button type="button" class="krc-btn krc-btn-secondary" id="krcResetBtn">Сброс</button>
+                    <button type="submit" class="krc-btn krc-btn-primary">Рассчитать ROI</button>
+                </div>
+            </form>
+
+            <!-- Результаты -->
+            <div id="krcResults" class="krc-results">
+                <div class="krc-divider"></div>
+
+                <div id="krcCallout" class="krc-callout" style="display:none"></div>
+
+                <div class="krc-section-title">ROI вебинара</div>
+                <div class="krc-roi-value" id="krcRoiValue">—</div>
+                <div class="krc-roi-sub">Каждый вложенный рубль вернулся в форме <strong id="krcReturnPerRuble">—</strong></div>
+
+                <div class="krc-divider"></div>
+
+                <div class="krc-breakdown">
+                    <div class="krc-breakdown-row">
+                        <span class="krc-breakdown-label">Общая выручка</span>
+                        <span class="krc-breakdown-value" id="krcTotalRevenue">—</span>
+                    </div>
+                    <div class="krc-breakdown-row">
+                        <span class="krc-breakdown-label">Общие расходы</span>
+                        <span class="krc-breakdown-value" id="krcTotalCosts">—</span>
+                    </div>
+                    <div class="krc-breakdown-row">
+                        <span class="krc-breakdown-label">Чистая прибыль</span>
+                        <span class="krc-breakdown-value" id="krcNetProfit">—</span>
+                    </div>
+                    <div class="krc-breakdown-row">
+                        <span class="krc-breakdown-label">Конверсия в продажу</span>
+                        <span class="krc-breakdown-value" id="krcConversionRate">—</span>
+                    </div>
+                    <div class="krc-breakdown-row">
+                        <span class="krc-breakdown-label">Явка на вебинар</span>
+                        <span class="krc-breakdown-value" id="krcAttendanceRate">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        (function() {
+            document.getElementById('krcRoiForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const registrations  = parseFloat(document.getElementById('krcRegistrations').value)  || 0;
+                const attendees      = parseFloat(document.getElementById('krcAttendees').value)      || 0;
+                const salesCount     = parseFloat(document.getElementById('krcSalesCount').value)     || 0;
+                const averageCheck   = parseFloat(document.getElementById('krcAverageCheck').value)   || 0;
+                const adCosts        = parseFloat(document.getElementById('krcAdCosts').value)        || 0;
+                const speakerCosts   = parseFloat(document.getElementById('krcSpeakerCosts').value)   || 0;
+                const platformCosts  = parseFloat(document.getElementById('krcPlatformCosts').value)  || 0;
+                const otherCosts     = parseFloat(document.getElementById('krcOtherCosts').value)     || 0;
+
+                const totalRevenue    = salesCount * averageCheck;
+                const totalCosts      = adCosts + speakerCosts + platformCosts + otherCosts;
+                const netProfit       = totalRevenue - totalCosts;
+                const roi             = totalCosts > 0 ? (netProfit / totalCosts) * 100 : 0;
+                const attendanceRate  = registrations > 0 ? (attendees / registrations) * 100 : 0;
+                const conversionRate  = attendees > 0 ? (salesCount / attendees) * 100 : 0;
+                const returnPerRuble  = totalCosts > 0 ? totalRevenue / totalCosts : 0;
+
+                const fmt = n => new Intl.NumberFormat('ru-RU').format(Math.round(n)) + ' ₽';
+                const pct = n => n.toFixed(1) + '%';
+
+                document.getElementById('krcRoiValue').textContent        = pct(roi);
+                document.getElementById('krcReturnPerRuble').textContent   = returnPerRuble.toFixed(2) + ' ₽';
+                document.getElementById('krcTotalRevenue').textContent     = fmt(totalRevenue);
+                document.getElementById('krcTotalCosts').textContent       = fmt(totalCosts);
+                document.getElementById('krcConversionRate').textContent   = pct(conversionRate);
+                document.getElementById('krcAttendanceRate').textContent   = pct(attendanceRate);
+
+                const netEl = document.getElementById('krcNetProfit');
+                netEl.textContent = fmt(netProfit);
+                netEl.className   = 'krc-breakdown-value' + (netProfit >= 0 ? ' krc-breakdown-value-positive' : ' krc-breakdown-value-negative');
+
+                const callout = document.getElementById('krcCallout');
+                callout.style.display = 'block';
+                if (roi > 0) {
+                    callout.className = 'krc-callout krc-callout-green';
+                    callout.innerHTML = 'Вебинар <strong>окупился</strong> — ROI положительный';
+                } else if (roi < 0) {
+                    callout.className = 'krc-callout krc-callout-orange';
+                    callout.innerHTML = 'Вебинар <strong>не окупился</strong> — расходы превысили выручку';
+                } else {
+                    callout.className = 'krc-callout krc-callout-neutral';
+                    callout.innerHTML = 'Вебинар вышел <strong>в ноль</strong>';
+                }
+
+                document.getElementById('krcResults').classList.add('krc-show');
+
+                const resultsEl = document.getElementById('krcResults');
+                if (resultsEl && resultsEl.scrollIntoView) {
+                    resultsEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
+
+            document.getElementById('krcResetBtn').addEventListener('click', function() {
+                document.getElementById('krcRoiForm').reset();
+                document.getElementById('krcResults').classList.remove('krc-show');
+                const calculator = document.querySelector('.kinescope-roi-calculator');
+                if (calculator && calculator.scrollIntoView) {
+                    calculator.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        })();
+    </script>
+</div>
+
+
+<script>
+  // ── Auto-resize iframe через postMessage ──
+  function sendHeight() {
+    const h = document.documentElement.scrollHeight;
+    window.parent.postMessage({ type: 'iframeResize', height: h }, '*');
+  }
+  sendHeight();
+  window.addEventListener('load', sendHeight);
+  const ro = new ResizeObserver(sendHeight);
+  ro.observe(document.body);
+</script>
+
+</body>
+</html>

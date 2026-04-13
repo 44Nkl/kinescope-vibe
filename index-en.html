@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing Calculator — Kinescope</title>
+  <style>
+    @font-face {
+      font-family: 'TT Hoves Pro Compact';
+      src: url('fonts/TT_Hoves_Pro_Compact_Regular.woff2') format('woff2'),
+           url('fonts/TT_Hoves_Pro_Compact_Regular.woff') format('woff');
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'TT Hoves Pro Compact';
+      src: url('fonts/TT_Hoves_Pro_Compact_Medium.woff2') format('woff2'),
+           url('fonts/TT_Hoves_Pro_Compact_Medium.woff') format('woff');
+      font-weight: 500;
+      font-style: normal;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #FCFCF7;
+      --card:        #FFFFFF;
+      --border:      #EFEDEA;
+      --text:        #000000;
+      --text-sec:    rgba(0,0,0,.4);
+      --accent:      #6B61FC;
+      --not-black:   #1A1A1A;
+      --track-empty: #EFEDEA;
+      --radius:      20px;
+    }
+
+    body {
+      font-family: 'TT Hoves Pro Compact', sans-serif;
+      background: transparent;
+      color: var(--text);
+      padding: 48px 24px 56px;
+    }
+
+    /* ── Layout ── */
+    .calc-body {
+      display: grid;
+      grid-template-columns: 1fr 308px;
+      gap: 16px;
+      align-items: stretch;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* ── Shared card ── */
+    .sliders-panel,
+    .summary-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Sliders panel ── */
+    .sliders-panel {
+      padding: 36px 32px;
+      justify-content: space-between;
+      gap: 32px;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .slider-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .slider-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.2;
+      color: var(--text);
+    }
+
+    /* ── Info icon ── */
+    .info-icon {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      color: var(--text-sec);
+      font-size: 10px;
+      font-weight: 700;
+      cursor: help;
+      flex-shrink: 0;
+      line-height: 1;
+      user-select: none;
+    }
+
+    .info-icon .tooltip {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-4px);
+      transition: opacity .18s ease, transform .18s ease;
+      position: absolute;
+      left: 50%;
+      translate: -50%;
+      bottom: calc(100% + 8px);
+      background: #000000;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 1.5;
+      padding: 10px 14px;
+      border-radius: 10px;
+      width: 256px;
+      z-index: 20;
+      box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    }
+
+    .info-icon .tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%; left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: #000000;
+    }
+
+    .info-icon:hover .tooltip {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    /* Tooltip below — for CDN, to avoid clipping at the top of the iframe */
+    .info-icon.tooltip-below .tooltip {
+      bottom: auto;
+      top: calc(100% + 8px);
+      transform: translateY(4px);
+    }
+    .info-icon.tooltip-below .tooltip::after {
+      top: auto;
+      bottom: 100%;
+      border-top-color: transparent;
+      border-bottom-color: #000000;
+    }
+    .info-icon.tooltip-below:hover .tooltip {
+      transform: translateY(0);
+    }
+
+    /* ── Slider value — manual input ── */
+    .slider-value-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      justify-content: flex-end;
+    }
+
+    .slider-value-input {
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.2;
+      color: var(--accent);
+      border: none;
+      border-bottom: 1.5px solid transparent;
+      background: transparent;
+      outline: none;
+      text-align: right;
+      width: 86px;
+      cursor: text;
+      transition: border-color .15s ease;
+      -moz-appearance: textfield;
+    }
+    .slider-value-input::-webkit-outer-spin-button,
+    .slider-value-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .slider-value-input:focus {
+      border-bottom-color: var(--accent);
+    }
+
+    .slider-unit {
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.2;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ── Range input ── */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 3px;
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+      background: linear-gradient(
+        to right,
+        var(--accent) 0%,
+        var(--accent) var(--fill, 0%),
+        var(--track-empty) var(--fill, 0%),
+        var(--track-empty) 100%
+      );
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 2px 8px rgba(107,97,252,.35);
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover,
+    input[type="range"]:active::-webkit-slider-thumb {
+      transform: scale(1.15);
+      box-shadow: 0 3px 12px rgba(107,97,252,.45);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      box-shadow: 0 2px 8px rgba(107,97,252,.35);
+      cursor: pointer;
+    }
+
+    /* ── Tick marks ── */
+    .ticks {
+      position: relative;
+      height: 14px;
+    }
+    .tick {
+      position: absolute;
+      transform: translateX(-50%);
+      font-size: 10px;
+      font-weight: 500;
+      color: rgba(0,0,0,.25);
+      white-space: nowrap;
+    }
+    .tick:first-child { transform: none; }
+    .tick:last-child  { transform: translateX(-100%); }
+
+    /* ── Support hint ── */
+    .support-hint {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.2;
+      color: var(--text-sec);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .support-link {
+      color: var(--accent);
+      font-weight: 500;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .support-link:hover { text-decoration: underline; }
+
+    /* ── Summary card ── */
+    .summary-card {
+      padding: 32px 28px;
+    }
+
+    /* ── Callout ── */
+    .callout {
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+    .callout strong { font-weight: 500; }
+    .callout-green {
+      background: #EDFAF4;
+      border: 1.5px solid #7ECBA1;
+      color: #0A5C35;
+    }
+    .callout-neutral {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--text-sec);
+    }
+    .callout-orange {
+      background: #FFF7ED;
+      border: 1.5px solid #FDB87C;
+      color: #7C3A0A;
+    }
+
+    /* ── Free state ── */
+    .free-state {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+    }
+    .free-state.visible { display: flex; }
+
+    .free-label {
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.2;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-sec);
+      margin-bottom: 12px;
+    }
+
+    .free-title {
+      font-size: 36px;
+      font-weight: 500;
+      letter-spacing: -0.26px;
+      line-height: 0.95;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .free-sub {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.2;
+      color: var(--text-sec);
+      margin-bottom: 24px;
+    }
+
+    .free-features {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .free-feature {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+    .free-feature-label { color: var(--text-sec); font-weight: 400; }
+    .free-feature-value { font-weight: 500; color: var(--text); }
+
+    /* ── Paid state ── */
+    .paid-state {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+    }
+    .paid-state.visible { display: flex; }
+
+    .price-block { margin-bottom: 0; }
+
+    .price-main {
+      font-size: 48px;
+      font-weight: 500;
+      letter-spacing: -0.26px;
+      line-height: 0.95;
+      color: var(--text);
+    }
+    .price-main.custom {
+      font-size: 20px;
+      font-weight: 500;
+      letter-spacing: 0;
+      line-height: 1.2;
+    }
+
+    .price-period {
+      margin-top: 6px;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.2;
+      color: var(--text-sec);
+    }
+
+    .price-min-note {
+      display: none;
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.2;
+      color: var(--text-sec);
+    }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+
+    /* ── Breakdown ── */
+    .breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+    .breakdown-label { color: var(--text-sec); font-weight: 400; }
+    .breakdown-value { font-weight: 500; color: var(--text); }
+    .breakdown-value.custom-val {
+      font-weight: 400;
+      font-style: italic;
+      color: var(--text-sec);
+    }
+
+    .card-spacer { flex: 1; }
+
+    /* ── CTA button ── */
+    .cta-btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background: var(--not-black);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.2;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background .2s ease, transform .1s ease;
+    }
+    .cta-btn:hover { background: #2a2a2a; }
+    .cta-btn:active { transform: scale(.98); }
+
+    /* ── Responsive ── */
+    @media (max-width: 680px) {
+      body { padding: 32px 16px 40px; }
+      .calc-body { grid-template-columns: 1fr; }
+      .sliders-panel { padding: 28px 20px; }
+      .summary-card { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="calc-body">
+
+  <!-- Sliders -->
+  <div class="sliders-panel">
+
+    <div class="slider-group">
+      <div class="slider-label-row">
+        <div class="slider-label">
+          CDN Traffic
+          <span class="info-icon tooltip-below">i<span class="tooltip">Outbound traffic during video playback. Check the "Statistics" or "Traffic" section in your current hosting provider.<br>Example: One HD view ≈ 1–2 GB — multiply by the number of views per month.</span></span>
+        </div>
+        <div class="slider-value-row">
+          <input type="text" class="slider-value-input" id="cdn-val" inputmode="numeric" value="0">
+          <span class="slider-unit">GB</span>
+        </div>
+      </div>
+      <input type="range" id="cdn-slider" min="0" max="100" value="0">
+      <div class="ticks">
+        <span class="tick" style="left:0%">0</span>
+        <span class="tick" style="left:25%">1,000</span>
+        <span class="tick" style="left:50%">5,000</span>
+        <span class="tick" style="left:75%">10,000</span>
+        <span class="tick" style="left:100%">50,000 GB</span>
+      </div>
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-label-row">
+        <div class="slider-label">
+          Storage
+          <span class="info-icon">i<span class="tooltip">Total size of video files on servers. Check "Storage" or "Usage" in your current service.<br>Example: One hour of HD video ≈ 2–4 GB — multiply by the total duration of your video library.</span></span>
+        </div>
+        <div class="slider-value-row">
+          <input type="text" class="slider-value-input" id="storage-val" inputmode="numeric" value="0">
+          <span class="slider-unit">GB</span>
+        </div>
+      </div>
+      <input type="range" id="storage-slider" min="0" max="100" value="0">
+      <div class="ticks">
+        <span class="tick" style="left:0%">0</span>
+        <span class="tick" style="left:25%">1,000</span>
+        <span class="tick" style="left:50%">5,000</span>
+        <span class="tick" style="left:75%">10,000</span>
+        <span class="tick" style="left:100%">50,000 GB</span>
+      </div>
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-label-row">
+        <div class="slider-label">
+          Transcoding
+          <span class="info-icon">i<span class="tooltip">Minutes of video conversion when uploading. Equals the total duration of all videos uploaded per month.<br>Example: 100 videos × 10 min = 1,000 min/month.</span></span>
+        </div>
+        <div class="slider-value-row">
+          <input type="text" class="slider-value-input" id="trans-val" inputmode="numeric" value="0">
+          <span class="slider-unit">min</span>
+        </div>
+      </div>
+      <input type="range" id="trans-slider" min="0" max="100" value="0">
+      <div class="ticks">
+        <span class="tick" style="left:0%">0</span>
+        <span class="tick" style="left:25%">1,000</span>
+        <span class="tick" style="left:50%">5,000</span>
+        <span class="tick" style="left:75%">10,000</span>
+        <span class="tick" style="left:100%">50,000 min</span>
+      </div>
+    </div>
+
+    <div class="support-hint">
+      Not sure how to calculate?
+      <a href="https://t.me/kinescope_bot" target="_blank" rel="noopener noreferrer" class="support-link">Talk to support →</a>
+    </div>
+
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-card">
+
+    <!-- Free plan -->
+    <div class="free-state visible" id="free-state">
+      <div class="callout callout-green" id="callout-free" style="display:none">
+        Your usage fits the <strong>Free plan</strong> — try it at no cost!
+      </div>
+      <div class="callout callout-neutral" id="callout-neutral">
+        Select your usage to calculate the cost
+      </div>
+
+      <div id="free-price-block">
+        <div class="free-title">€0</div>
+        <div class="free-sub">forever, no card required</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="free-label">Included in the free plan</div>
+
+      <div class="free-features">
+        <div class="free-feature">
+          <span class="free-feature-label">CDN traffic</span>
+          <span class="free-feature-value">200 GB / month</span>
+        </div>
+        <div class="free-feature">
+          <span class="free-feature-label">Video storage</span>
+          <span class="free-feature-value">up to 100 min</span>
+        </div>
+        <div class="free-feature">
+          <span class="free-feature-label">Live streaming</span>
+          <span class="free-feature-value">up to 20 min</span>
+        </div>
+        <div class="free-feature">
+          <span class="free-feature-label">Live viewers</span>
+          <span class="free-feature-value">up to 20</span>
+        </div>
+        <div class="free-feature">
+          <span class="free-feature-label">Users</span>
+          <span class="free-feature-value">2</span>
+        </div>
+      </div>
+
+      <div class="card-spacer"></div>
+      <div class="divider"></div>
+      <a href="https://kinescope.com/signup" target="_blank" rel="noopener noreferrer" class="cta-btn">Start for free</a>
+    </div>
+
+    <!-- Paid plan -->
+    <div class="paid-state" id="paid-state">
+      <div class="callout callout-orange" id="custom-callout" style="display:none">
+        You need a <strong>custom quote</strong> — contact us and we'll find the right plan
+      </div>
+
+      <div class="price-block" id="price-block">
+        <div class="price-main" id="price-main"></div>
+        <div class="price-period" id="price-period">per month</div>
+        <div class="price-min-note" id="min-note">Minimum monthly payment — €5</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="breakdown">
+        <div class="breakdown-row">
+          <span class="breakdown-label">CDN traffic</span>
+          <span class="breakdown-value" id="cdn-cost"></span>
+        </div>
+        <div class="breakdown-row">
+          <span class="breakdown-label">Storage</span>
+          <span class="breakdown-value" id="storage-cost"></span>
+        </div>
+        <div class="breakdown-row">
+          <span class="breakdown-label">Transcoding</span>
+          <span class="breakdown-value" id="trans-cost"></span>
+        </div>
+      </div>
+
+      <div class="card-spacer"></div>
+      <div class="divider"></div>
+      <a href="https://kinescope.com/signup" target="_blank" rel="noopener noreferrer" class="cta-btn" id="cta-main">Start for free</a>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  // Tick values and their positions on the slider (0–100)
+  // Each segment is linearly stretched over 25% → 500 falls exactly halfway between 0 and 1000
+  const TICK_VALS = [0, 1000, 5000, 10000, 50000];
+  const TICK_POS  = [0,   25,   50,    75,   100];
+
+  function posToVal(pos) {
+    pos = Math.max(0, Math.min(100, pos));
+    for (let i = 0; i < TICK_POS.length - 1; i++) {
+      if (pos <= TICK_POS[i + 1]) {
+        const t = (pos - TICK_POS[i]) / (TICK_POS[i + 1] - TICK_POS[i]);
+        return Math.round(TICK_VALS[i] + t * (TICK_VALS[i + 1] - TICK_VALS[i]));
+      }
+    }
+    return TICK_VALS[TICK_VALS.length - 1];
+  }
+
+  function valToPos(val) {
+    val = Math.max(0, val);
+    for (let i = 0; i < TICK_VALS.length - 1; i++) {
+      if (val <= TICK_VALS[i + 1]) {
+        const t = (val - TICK_VALS[i]) / (TICK_VALS[i + 1] - TICK_VALS[i]);
+        return Math.round(TICK_POS[i] + t * (TICK_POS[i + 1] - TICK_POS[i]));
+      }
+    }
+    return 100;
+  }
+
+  const MIN_PAYMENT = 0;
+  const FREE_CDN  = 200;  // GB — free plan limit
+  const FREE_STOR = 100;  // GB — free plan limit
+
+  function calcCDN(gb) {
+    if (!gb) return 0;
+    if (gb > 51000) return Infinity;
+    let c = 0, r = gb;
+    const t1 = Math.min(r, 1000);  c += t1 * 0.03;  r -= t1;
+    const t2 = Math.min(r, 5000);  c += t2 * 0.02;  r -= t2;
+    const t3 = Math.min(r, 15000); c += t3 * 0.015; r -= t3;
+    c += Math.min(r, 30000) * 0.01;
+    return c;
+  }
+
+  function calcStorage(gb) {
+    if (!gb) return 0;
+    if (gb > 21000) return Infinity;
+    let c = 0, r = gb;
+    const t1 = Math.min(r, 1000); c += t1 * 0.03; r -= t1;
+    c += r * 0.02;
+    return c;
+  }
+
+  function calcTranscoding(min) {
+    if (!min) return 0;
+    if (min > 60000) return Infinity;
+    return min * 0.01;
+  }
+
+  const $ = id => document.getElementById(id);
+
+  const cdnSlider     = $('cdn-slider');
+  const storageSlider = $('storage-slider');
+  const transSlider   = $('trans-slider');
+  const cdnInput      = $('cdn-val');
+  const storageInput  = $('storage-val');
+  const transInput    = $('trans-val');
+
+  // Current values (may exceed max tick → custom quote)
+  let cdnGB = 0, storGB = 0, transMin = 0;
+
+  function fmt(n) {
+    return n % 1 === 0
+      ? n.toLocaleString('en-US')
+      : n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function usd(n) { return '€' + fmt(n); }
+
+  function setFill(el) {
+    el.style.setProperty('--fill', el.value + '%');
+  }
+
+  function parseInput(raw) {
+    return Math.max(0, Math.round(parseFloat(String(raw).replace(/\s/g, '').replace(',', '.')) || 0));
+  }
+
+  function syncSlider(val, slider) {
+    slider.value = valToPos(val);
+    setFill(slider);
+  }
+
+  function update() {
+    const allZero    = cdnGB === 0 && storGB === 0 && transMin === 0;
+    const withinFree = cdnGB <= FREE_CDN && storGB <= FREE_STOR && transMin === 0;
+    $('free-state').classList.toggle('visible', withinFree);
+    $('paid-state').classList.toggle('visible', !withinFree);
+    $('callout-free').style.display    = (!allZero && withinFree) ? 'block' : 'none';
+    $('callout-neutral').style.display = allZero ? 'block' : 'none';
+    $('free-price-block').style.display = allZero ? 'none' : 'block';
+    if (withinFree) return;
+
+    const c1 = calcCDN(cdnGB), c2 = calcStorage(storGB), c3 = calcTranscoding(transMin);
+    const isCustom = [c1, c2, c3].some(v => v === Infinity);
+
+    const setLine = (id, v) => {
+      const el = $(id);
+      el.textContent = v === Infinity ? 'custom quote' : usd(v);
+      el.className = 'breakdown-value' + (v === Infinity ? ' custom-val' : '');
+    };
+    setLine('cdn-cost',     c1);
+    setLine('storage-cost', c2);
+    setLine('trans-cost',   c3);
+
+    const pm = $('price-main'), pp = $('price-period'), mn = $('min-note'), cta = $('cta-main');
+    const customCallout = $('custom-callout'), priceBlock = $('price-block');
+
+    if (isCustom) {
+      customCallout.style.display = 'block';
+      priceBlock.style.display    = 'none';
+      cta.textContent = 'Request a quote';
+      cta.href = 'https://kinescope.com/demo';
+    } else {
+      customCallout.style.display = 'none';
+      priceBlock.style.display    = 'block';
+      const sum = c1 + c2 + c3;
+      pm.textContent = '≈ ' + usd(sum);
+      pm.className = 'price-main';
+      pp.textContent = 'per month';
+      mn.style.display = 'none';
+      cta.textContent = 'Start for free';
+      cta.href = 'https://kinescope.com/signup';
+    }
+  }
+
+  // ── Slider → value + update input ──
+  cdnSlider.addEventListener('input', () => {
+    cdnGB = posToVal(+cdnSlider.value);
+    cdnInput.value = fmt(cdnGB);
+    setFill(cdnSlider);
+    update();
+  });
+
+  storageSlider.addEventListener('input', () => {
+    storGB = posToVal(+storageSlider.value);
+    storageInput.value = fmt(storGB);
+    setFill(storageSlider);
+    update();
+  });
+
+  transSlider.addEventListener('input', () => {
+    transMin = posToVal(+transSlider.value);
+    transInput.value = fmt(transMin);
+    setFill(transSlider);
+    update();
+  });
+
+  // ── Input → value + slider position ──
+  function applyInput(input, slider, setVal) {
+    const val = parseInput(input.value);
+    setVal(val);
+    input.value = fmt(val);
+    syncSlider(val, slider);
+    update();
+  }
+
+  cdnInput.addEventListener('change',     () => applyInput(cdnInput,     cdnSlider,     v => cdnGB    = v));
+  storageInput.addEventListener('change', () => applyInput(storageInput,  storageSlider, v => storGB   = v));
+  transInput.addEventListener('change',   () => applyInput(transInput,    transSlider,   v => transMin = v));
+
+  // Enter = apply value
+  [cdnInput, storageInput, transInput].forEach(inp => {
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
+    inp.addEventListener('focus', () => inp.select());
+  });
+
+  // ── Init ──
+  cdnSlider.max = storageSlider.max = transSlider.max = 100;
+
+  cdnSlider.value = storageSlider.value = transSlider.value = 0;
+  cdnInput.value = storageInput.value = transInput.value = '0';
+
+  setFill(cdnSlider);
+  setFill(storageSlider);
+  setFill(transSlider);
+
+  update();
+</script>
+
+<script>
+  // ── Auto-resize iframe via postMessage ──
+  function sendHeight() {
+    const h = document.documentElement.scrollHeight;
+    window.parent.postMessage({ type: 'iframeResize', height: h }, '*');
+  }
+
+  sendHeight();
+  window.addEventListener('load', sendHeight);
+
+  const ro = new ResizeObserver(sendHeight);
+  ro.observe(document.body);
+</script>
+</body>
+</html>

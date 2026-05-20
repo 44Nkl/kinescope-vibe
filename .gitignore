@@ -1,0 +1,46 @@
+# === Cursor / Claude IDE ===
+# MCP config contains Kaiten API tokens — never commit
+.cursor/mcp.json
+.cursor/mcp.local.json
+.cursor/settings.json
+# Skills can be committed, but local overrides must not
+.cursor/rules/*.local.md
+
+# Claude Code local settings (may contain API keys or hooks with tokens)
+.claude/settings.local.json
+
+# === Environment & secrets ===
+.env
+.env.*
+!.env.example
+*.local
+secrets/
+credentials/
+tokens/
+
+# === Personal notes with sensitive context ===
+# Kaiten card exports with customer data, internal pricing, etc.
+private/
+notes/private/
+*.private.md
+
+# === MCP server configs (may store connection strings with passwords) ===
+mcp-config.json
+mcp.local.json
+cursor-mcp.json
+
+# === OS / editor noise ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+*.iml
+
+# === Logs ===
+*.log
+logs/
+
+# === Node (if any tooling is added) ===
+node_modules/

@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connection Check — Kinescope</title>
+<style>
+  @font-face {
+    font-family: 'TT Hoves Pro Compact';
+    src: url('fonts/TT_Hoves_Pro_Compact_Regular.woff2') format('woff2'),
+         url('fonts/TT_Hoves_Pro_Compact_Regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'TT Hoves Pro Compact';
+    src: url('fonts/TT_Hoves_Pro_Compact_Medium.woff2') format('woff2'),
+         url('fonts/TT_Hoves_Pro_Compact_Medium.woff') format('woff');
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:          #FCFCF7;
+    --card:        #FFFFFF;
+    --border:      #EFEDEA;
+    --text:        #000000;
+    --text-sec:    rgba(0,0,0,.4);
+    --accent:      #6B61FC;
+    --not-black:   #1A1A1A;
+    --track-empty: #EFEDEA;
+    --radius:      20px;
+  }
+
+  body {
+    font-family: 'TT Hoves Pro Compact', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 48px 24px 56px;
+  }
+
+  .page {
+    max-width: 560px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── Header ── */
+  .header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .eyebrow { display: block; width: 120px; }
+  .eyebrow svg { display: block; width: 100%; height: auto; }
+
+  .lang-switch { position: relative; flex-shrink: 0; }
+  .lang-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    padding: 4px 2px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-sec);
+    transition: color .15s ease;
+  }
+  .lang-btn:hover { color: var(--text); }
+  .lang-arrow { transition: transform .2s ease; }
+  .lang-switch.open .lang-arrow { transform: rotate(180deg); }
+  .lang-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 6px;
+    min-width: 76px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 40;
+  }
+  .lang-switch.open .lang-menu { display: flex; }
+  .lang-option {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    text-align: left;
+    padding: 7px 10px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-sec);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .lang-option:hover { background: var(--bg); color: var(--text); }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: -0.26px;
+    line-height: 1.05;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    font-size: 15px;
+    line-height: 1.4;
+    color: var(--text-sec);
+  }
+
+  /* ── Shared card ── */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 32px 28px;
+  }
+
+  /* ── Phase steps ── */
+  .steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 28px;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-sec);
+  }
+  .step-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--track-empty);
+    transition: background .2s ease;
+  }
+  .step.active .step-dot { background: #F5A623; }
+  .step.done .step-dot   { background: #2FAE68; }
+  .step.active { color: var(--text); }
+  .step.done   { color: var(--text-sec); }
+  .step-line {
+    width: 20px; height: 1.5px;
+    background: var(--track-empty);
+  }
+
+  /* ── Gauge ── */
+  @property --pct {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+  .gauge-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+  .gauge {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: conic-gradient(from -90deg, var(--accent) calc(var(--pct, 0) * 1%), rgba(0,0,0,.045) 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: .5;
+    transition: --pct .4s ease, opacity .3s ease;
+  }
+  .gauge.running,
+  .gauge.done { opacity: 1; }
+  .gauge.running { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(107,97,252,.0); }
+    50%      { box-shadow: 0 0 0 8px rgba(107,97,252,.06); }
+  }
+  .gauge-inner {
+    width: 178px;
+    height: 178px;
+    border-radius: 50%;
+    background: var(--card);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .gauge-value {
+    font-size: 40px;
+    font-weight: 500;
+    letter-spacing: -0.26px;
+    line-height: 1;
+  }
+  .gauge-unit {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-sec);
+    margin-top: 4px;
+  }
+  .gauge-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    margin-top: 10px;
+  }
+
+  /* ── Comment ── */
+  .comment {
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--text-sec);
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    margin-bottom: 24px;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.2;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    transition: background .2s ease, transform .1s ease, border-color .2s ease, color .2s ease;
+  }
+  .btn-primary {
+    background: var(--not-black);
+    color: #fff;
+  }
+  .btn-primary:hover  { background: #2a2a2a; }
+  .btn-primary:active { transform: scale(.98); }
+  .btn-primary.running {
+    background: rgba(196,57,43,.25);
+    color: #A82F23;
+  }
+  .btn-primary.running:hover { background: rgba(196,57,43,.35); }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text-sec);
+    border: 1.5px solid var(--border);
+  }
+  .btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .btn-secondary:active { transform: scale(.98); }
+  .btn-secondary.copied {
+    border-color: #7ECBA1;
+    color: #0A5C35;
+  }
+
+  /* ── Metrics grid ── */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .metric-tile {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 16px 10px;
+    text-align: center;
+  }
+  .metric-value {
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -0.2px;
+  }
+  .metric-unit {
+    font-size: 11px;
+    color: var(--text-sec);
+    margin-top: 2px;
+  }
+  .metric-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-sec);
+    margin-top: 8px;
+  }
+
+  /* ── Callout (verdict) ── */
+  .callout {
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.4;
+    display: none;
+  }
+  .callout strong { font-weight: 500; }
+  .callout.visible { display: block; }
+  .callout-green {
+    background: #EDFAF4;
+    border: 1.5px solid #7ECBA1;
+    color: #0A5C35;
+  }
+  .callout-orange {
+    background: #FFF7ED;
+    border: 1.5px solid #FDB87C;
+    color: #7C3A0A;
+  }
+  .callout-red {
+    background: #FDECEA;
+    border: 1.5px solid #F0908A;
+    color: #7A1F1F;
+  }
+
+  /* ── System info ── */
+  .sysinfo-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sysinfo-title {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: var(--text-sec);
+    margin-bottom: 6px;
+  }
+  .sysinfo-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14px;
+    line-height: 1.3;
+  }
+  .sysinfo-label { color: var(--text-sec); font-weight: 400; flex-shrink: 0; }
+  .sysinfo-value { font-weight: 500; color: var(--text); text-align: right; word-break: break-word; }
+
+  /* ── Actions row ── */
+  .actions-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .support-hint {
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.3;
+    color: var(--text-sec);
+    text-align: center;
+  }
+  .support-link {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* ── Footer ── */
+  .footer-credit {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-sec);
+    opacity: .7;
+  }
+  .footer-credit a { color: inherit; text-decoration: underline; }
+
+  @media (max-width: 480px) {
+    body { padding: 32px 16px 40px; }
+    .card { padding: 24px 18px; }
+    .gauge { width: 180px; height: 180px; }
+    .gauge-inner { width: 144px; height: 144px; }
+    .gauge-value { font-size: 32px; }
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    .step span.step-text { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div>
+    <div class="header-row">
+      <div class="eyebrow">
+        <svg width="225" height="38" viewBox="0 0 225 38" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Kinescope">
+          <path d="M46.4632 30.0726V1.81862H51.5323V12.8133C51.5323 13.1664 51.8185 13.4526 52.1716 13.4526H53.7954C54.0032 13.4526 54.198 13.3516 54.3178 13.1819L62.429 1.68555H68.4537L58.518 15.2748C58.3528 15.5008 58.3538 15.808 58.5204 16.0328L68.8277 29.9395H62.5952L54.2766 18.4536C54.1564 18.2876 53.9638 18.1893 53.7589 18.1893H52.1716C51.8185 18.1893 51.5323 18.4755 51.5323 18.8286V30.0726H46.4632Z" fill="#000000"/>
+          <path d="M70.8247 6.58844V1.93485H75.8938V6.58844H70.8247ZM70.9493 29.9395V9.82933H75.7276V29.9395H70.9493Z" fill="#000000"/>
+          <path d="M80.0497 29.9395V9.82933H84.7033V11.4814C84.7033 11.7933 85.1275 11.9372 85.3433 11.7121C85.9055 11.1259 86.5785 10.6368 87.3625 10.2448C88.4982 9.69083 89.7586 9.41383 91.1436 9.41383C93.3319 9.41383 95.1047 10.0232 96.462 11.242C97.8193 12.4608 98.4979 14.2336 98.4979 16.5604V29.9395H93.7197V17.5161C93.7197 16.2419 93.3734 15.2724 92.6809 14.6076C91.9884 13.9151 90.9358 13.5688 89.5231 13.5688C88.2766 13.5688 87.1825 13.9428 86.2407 14.6907C85.2989 15.4386 84.828 16.4773 84.828 17.8069V29.9395H80.0497Z" fill="#000000"/>
+          <path d="M120.114 20.8816H106.708C106.339 20.8816 106.045 21.1925 106.09 21.558C106.276 23.0585 106.768 24.2319 107.566 25.0782C108.48 26.02 109.671 26.4909 111.139 26.4909C112.524 26.4909 113.577 26.1723 114.297 25.5352C115.017 24.8981 115.488 24.2195 115.71 23.4993L119.989 24.2887C119.546 25.9507 118.59 27.3773 117.122 28.5684C115.682 29.7595 113.66 30.355 111.056 30.355C108.037 30.355 105.655 29.4271 103.909 27.5712C102.192 25.7153 101.333 23.153 101.333 19.8844C101.333 18.1947 101.583 16.6989 102.081 15.397C102.608 14.0674 103.3 12.9733 104.159 12.1146C105.045 11.2282 106.07 10.5634 107.233 10.1202C108.425 9.64928 109.699 9.41383 111.056 9.41383C113.937 9.41383 116.167 10.3279 117.746 12.1561C119.324 13.9566 120.114 16.4081 120.114 19.5105V20.8816ZM111.056 13.278C109.837 13.278 108.771 13.6519 107.857 14.3998C107.136 14.9858 106.616 15.801 106.298 16.8454C106.181 17.2304 106.486 17.5992 106.888 17.5992H114.849C115.223 17.5992 115.52 17.2783 115.453 16.9104C115.268 15.9009 114.869 15.0779 114.255 14.4414C113.535 13.6658 112.469 13.278 111.056 13.278Z" fill="#000000"/>
+          <path d="M122.084 24.1225L126.447 23.5408C126.696 24.5657 127.195 25.3275 127.943 25.8261C128.69 26.3247 129.701 26.574 130.976 26.574C132.278 26.574 133.247 26.3801 133.884 25.9923C134.521 25.6045 134.84 25.0643 134.84 24.3718C134.84 23.6793 134.591 23.153 134.092 22.7929C133.621 22.4328 132.748 22.142 131.474 21.9204L128.774 21.4218C126.862 21.0894 125.366 20.48 124.286 19.5936C123.234 18.7072 122.707 17.3914 122.707 15.6463C122.707 13.7073 123.469 12.1838 124.992 11.0758C126.544 9.96783 128.524 9.41383 130.934 9.41383C133.316 9.41383 135.241 9.96783 136.71 11.0758C138.178 12.1561 139.05 13.5411 139.327 15.2308L135.089 16.1449C134.895 15.2862 134.466 14.5799 133.801 14.0259C133.136 13.4719 132.153 13.1949 130.851 13.1949C129.688 13.1949 128.787 13.4026 128.15 13.8181C127.513 14.2059 127.195 14.7322 127.195 15.397C127.195 16.1172 127.458 16.6297 127.984 16.9344C128.51 17.2114 129.3 17.4468 130.352 17.6407L132.929 18.1393C135.034 18.5271 136.626 19.1919 137.707 20.1337C138.815 21.0478 139.369 22.3636 139.369 24.081C139.369 25.9369 138.649 27.4465 137.208 28.6099C135.768 29.7733 133.649 30.355 130.851 30.355C128.413 30.355 126.419 29.8426 124.868 28.8177C123.344 27.7651 122.416 26.2 122.084 24.1225Z" fill="#000000"/>
+          <path d="M155.618 22.8345L160.022 23.4162C159.607 25.466 158.651 27.1418 157.155 28.4437C155.659 29.7179 153.623 30.355 151.047 30.355C148.166 30.355 145.826 29.4686 144.025 27.6958C142.252 25.923 141.366 23.3192 141.366 19.8844C141.366 18.167 141.615 16.6574 142.114 15.3555C142.613 14.0259 143.291 12.9317 144.15 12.073C145.009 11.1866 146.034 10.5218 147.225 10.0786C148.416 9.63543 149.704 9.41383 151.089 9.41383C152.474 9.41383 153.679 9.59388 154.704 9.95398C155.756 10.3141 156.629 10.7988 157.321 11.4082C158.041 12.0176 158.609 12.7378 159.025 13.5688C159.468 14.3998 159.773 15.2585 159.939 16.1449L155.659 16.9759C155.438 16.0618 154.981 15.2447 154.288 14.5245C153.596 13.8043 152.543 13.4442 151.13 13.4442C149.551 13.4442 148.319 14.012 147.432 15.1477C146.546 16.2557 146.103 17.8346 146.103 19.8844C146.103 21.8788 146.532 23.4577 147.391 24.6211C148.25 25.7568 149.482 26.3247 151.089 26.3247C152.501 26.3247 153.554 25.9784 154.247 25.2859C154.939 24.5934 155.396 23.7763 155.618 22.8345Z" fill="#000000"/>
+          <path d="M171.515 30.355C168.551 30.355 166.155 29.4271 164.327 27.5712C162.498 25.7153 161.584 23.1392 161.584 19.8429C161.584 16.5466 162.485 13.9843 164.285 12.1561C166.113 10.3279 168.523 9.41383 171.515 9.41383C174.534 9.41383 176.93 10.3279 178.703 12.1561C180.503 13.9843 181.404 16.5466 181.404 19.8429C181.404 23.1115 180.503 25.6876 178.703 27.5712C176.93 29.4271 174.534 30.355 171.515 30.355ZM171.515 26.3247C173.177 26.3247 174.451 25.7707 175.337 24.6627C176.224 23.527 176.667 21.9204 176.667 19.8429C176.667 17.7654 176.224 16.1865 175.337 15.1062C174.451 13.9982 173.177 13.4442 171.515 13.4442C169.908 13.4442 168.634 13.9982 167.692 15.1062C166.778 16.1865 166.321 17.7654 166.321 19.8429C166.321 21.9204 166.792 23.527 167.734 24.6627C168.676 25.7707 169.936 26.3247 171.515 26.3247Z" fill="#000000"/>
+          <path d="M184.468 38.0002V9.82933H189.205V11.3208C189.205 11.636 189.643 11.7822 189.864 11.5573C190.411 10.9998 191.078 10.5484 191.864 10.2033C193 9.67698 194.246 9.41383 195.604 9.41383C196.795 9.41383 197.917 9.63543 198.969 10.0786C200.05 10.5218 200.964 11.1728 201.712 12.0315C202.487 12.8902 203.097 13.9705 203.54 15.2724C204.011 16.5466 204.246 18.0147 204.246 19.6767C204.246 23.1115 203.374 25.7568 201.628 27.6127C199.883 29.4409 197.653 30.355 194.939 30.355C193.748 30.355 192.667 30.175 191.698 29.8149C190.996 29.5339 190.373 29.173 189.831 28.7321C189.607 28.5505 189.247 28.701 189.247 28.989V38.0002H184.468ZM189.247 21.5049C189.247 22.9453 189.745 24.1087 190.742 24.9951C191.74 25.8538 192.972 26.2831 194.44 26.2831C195.964 26.2831 197.183 25.7153 198.097 24.5796C199.011 23.4162 199.468 21.8373 199.468 19.8429C199.468 17.9039 199.011 16.3665 198.097 15.2308C197.21 14.0674 195.978 13.4857 194.399 13.4857C193.014 13.4857 191.809 13.9566 190.784 14.8984C189.759 15.8402 189.247 17.1421 189.247 18.8041V21.5049Z" fill="#000000"/>
+          <path d="M224.898 20.8816H211.491C211.123 20.8816 210.829 21.1925 210.874 21.558C211.06 23.0585 211.552 24.2319 212.35 25.0782C213.264 26.02 214.455 26.4909 215.923 26.4909C217.308 26.4909 218.361 26.1723 219.081 25.5352C219.801 24.8981 220.272 24.2195 220.493 23.4993L224.773 24.2887C224.33 25.9507 223.374 27.3773 221.906 28.5684C220.466 29.7595 218.444 30.355 215.84 30.355C212.821 30.355 210.438 29.4271 208.693 27.5712C206.976 25.7153 206.117 23.153 206.117 19.8844C206.117 18.1947 206.366 16.6989 206.865 15.397C207.391 14.0674 208.084 12.9733 208.943 12.1146C209.829 11.2282 210.854 10.5634 212.017 10.1202C213.208 9.64928 214.483 9.41383 215.84 9.41383C218.721 9.41383 220.95 10.3279 222.529 12.1561C224.108 13.9566 224.898 16.4081 224.898 19.5105V20.8816ZM215.84 13.278C214.621 13.278 213.555 13.6519 212.64 14.3998C211.919 14.9858 211.4 15.801 211.082 16.8454C210.965 17.2304 211.27 17.5992 211.672 17.5992H219.632C220.006 17.5992 220.304 17.2783 220.237 16.9104C220.052 15.9009 219.653 15.0779 219.039 14.4414C218.319 13.6658 217.253 13.278 215.84 13.278Z" fill="#000000"/>
+          <circle cx="7.50817" cy="7.50825" r="7.50825" fill="#000000"/>
+          <circle cx="7.50817" cy="23.3168" r="7.50825" fill="#000000"/>
+          <circle cx="23.3207" cy="7.50825" r="7.50825" fill="#000000"/>
+          <path d="M22.9934 30.1735C23.2023 30.4597 23.5353 30.6289 23.8896 30.6289H33.2677C33.5702 30.6289 33.7448 30.2855 33.5665 30.0411L23.6581 16.463C23.4493 16.1768 23.1163 16.0076 22.762 16.0076H13.3838C13.0813 16.0076 12.9068 16.351 13.0851 16.5954L22.9934 30.1735Z" fill="#000000"/>
+        </svg>
+      </div>
+
+      <div class="lang-switch" id="langSwitch">
+        <button type="button" class="lang-btn" id="langBtn" aria-haspopup="true" aria-expanded="false">
+          <span id="langLabel">EN</span>
+          <svg class="lang-arrow" width="9" height="17" viewBox="0 0 9 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1.07129 7L4.26083 9.91035C4.39183 10.0299 4.60826 10.0299 4.73931 9.91035L7.92885 7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="lang-menu" id="langMenu"></div>
+      </div>
+    </div>
+
+    <h1 data-i18n="h1">Connection Check</h1>
+    <p class="subtitle" data-i18n="subtitle">A quick check before you go live or join a call — see your speed, latency, and everything else that can affect call quality.</p>
+  </div>
+
+  <!-- Test card -->
+  <div class="card">
+    <div class="steps" id="steps">
+      <div class="step" data-phase="0"><span class="step-dot"></span><span class="step-text" data-i18n="step_ip">IP</span></div>
+      <div class="step-line"></div>
+      <div class="step" data-phase="2"><span class="step-dot"></span><span class="step-text" data-i18n="step_ping">Ping</span></div>
+      <div class="step-line"></div>
+      <div class="step" data-phase="1"><span class="step-dot"></span><span class="step-text" data-i18n="step_dl">Download</span></div>
+      <div class="step-line"></div>
+      <div class="step" data-phase="3"><span class="step-dot"></span><span class="step-text" data-i18n="step_ul">Upload</span></div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge" id="gauge" style="--pct:0">
+        <div class="gauge-inner">
+          <div class="gauge-value" id="gaugeValue">—</div>
+          <div class="gauge-unit" id="gaugeUnit">Mbps</div>
+          <div class="gauge-label" id="gaugeLabel">Ready to test</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="comment" id="comment">Click "Start Test" to measure your connection's speed and stability.</div>
+
+    <button class="btn btn-primary" id="startBtn" data-i18n="btn_start">Start Test</button>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-grid">
+    <div class="metric-tile">
+      <div class="metric-value" id="mPing">—</div>
+      <div class="metric-unit">ms</div>
+      <div class="metric-label" data-i18n="metric_ping">Ping</div>
+    </div>
+    <div class="metric-tile">
+      <div class="metric-value" id="mJitter">—</div>
+      <div class="metric-unit">ms</div>
+      <div class="metric-label" data-i18n="metric_jitter">Jitter</div>
+    </div>
+    <div class="metric-tile">
+      <div class="metric-value" id="mDown">—</div>
+      <div class="metric-unit">Mbps</div>
+      <div class="metric-label" data-i18n="metric_download">Download</div>
+    </div>
+    <div class="metric-tile">
+      <div class="metric-value" id="mUp">—</div>
+      <div class="metric-unit">Mbps</div>
+      <div class="metric-label" data-i18n="metric_upload">Upload</div>
+    </div>
+  </div>
+
+  <!-- Verdict -->
+  <div class="callout" id="verdict"></div>
+
+  <!-- System info -->
+  <div class="card sysinfo-card">
+    <div class="sysinfo-title" data-i18n="sysinfo_title">About your connection</div>
+    <div class="sysinfo-row"><span class="sysinfo-label" data-i18n="sysinfo_ip">IP address</span><span class="sysinfo-value" id="sIp">—</span></div>
+    <div class="sysinfo-row"><span class="sysinfo-label" data-i18n="sysinfo_provider">Provider</span><span class="sysinfo-value" id="sIsp">—</span></div>
+    <div class="sysinfo-row"><span class="sysinfo-label" data-i18n="sysinfo_city">City / Region</span><span class="sysinfo-value" id="sCity">—</span></div>
+    <div class="sysinfo-row"><span class="sysinfo-label" data-i18n="sysinfo_browser">Browser</span><span class="sysinfo-value" id="sBrowser">—</span></div>
+    <div class="sysinfo-row"><span class="sysinfo-label" data-i18n="sysinfo_os">Operating system</span><span class="sysinfo-value" id="sOs">—</span></div>
+    <div class="sysinfo-row"><span class="sysinfo-label" data-i18n="sysinfo_screen">Screen resolution</span><span class="sysinfo-value" id="sScreen">—</span></div>
+    <div class="sysinfo-row"><span class="sysinfo-label" data-i18n="sysinfo_conn">Connection type</span><span class="sysinfo-value" id="sConn">—</span></div>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions-row">
+    <button class="btn btn-secondary" id="copyBtn" data-i18n="copy_btn">Copy log for support</button>
+    <div class="support-hint">
+      <span data-i18n="support_text">Still unstable? </span><span class="support-link" data-i18n="support_link">Contact support →</span>
+    </div>
+  </div>
+
+  <div class="footer-credit"><span data-i18n="footer_prefix">Measured using </span><a href="https://github.com/librespeed/speedtest" target="_blank" rel="noopener noreferrer" data-i18n="footer_link">LibreSpeed</a></div>
+
+</div>
+
+<script src="speedtest.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var BACKEND = "https://speedtest.kinescope.io/backend/";
+
+  // ── i18n ──
+  var LANGS = [
+    { code: "en", label: "EN" },
+    { code: "pt", label: "PT" },
+    { code: "ja", label: "JP" },
+    { code: "nl", label: "NL" }
+  ];
+  var HTML_LANG = { en: "en", pt: "pt-BR", ja: "ja", nl: "nl" };
+  var LOCALE = { en: "en-US", pt: "pt-BR", ja: "ja-JP", nl: "nl-NL" };
+
+  var STRINGS = {
+    en: {
+      title: "Connection Check — Kinescope",
+      h1: "Connection Check",
+      subtitle: "A quick check before you go live or join a call — see your speed, latency, and everything else that can affect call quality.",
+      step_ip: "IP", step_ping: "Ping", step_dl: "Download", step_ul: "Upload",
+      gauge_ready: "Ready to test", gauge_latency: "Latency",
+      unit_mbps: "Mbps", unit_ms: "ms",
+      btn_start: "Start Test", btn_stop: "Stop",
+      comment_idle: "Click “Start Test” to measure your connection's speed and stability.",
+      comment_start: "Detecting your network environment…",
+      comment_dl: "Measuring download speed — this affects the quality of incoming video.",
+      comment_ping: "Checking latency and its variation — this affects how smooth your calls are.",
+      comment_ul: "Measuring upload speed — this determines how stable your stream will be.",
+      comment_abort: "Test stopped.",
+      metric_ping: "Ping", metric_jitter: "Jitter", metric_download: "Download", metric_upload: "Upload",
+      verdict_excellent: "<strong>Excellent connection.</strong> Handles a live Full HD stream and video calls without issues.",
+      verdict_good: "<strong>Good connection.</strong> Enough for an HD stream and stable video calls.",
+      verdict_warning: "<strong>Unstable connection.</strong> For streaming, drop to SD — calls may lag or freeze.",
+      verdict_poor: "<strong>Weak connection.</strong> High risk of drops and freezes — better to postpone the stream or call.",
+      sysinfo_title: "About your connection",
+      sysinfo_ip: "IP address", sysinfo_provider: "Provider", sysinfo_city: "City / Region",
+      sysinfo_browser: "Browser", sysinfo_os: "Operating system", sysinfo_screen: "Screen resolution", sysinfo_conn: "Connection type",
+      copy_btn: "Copy log for support", copy_done: "Copied ✓",
+      support_text: "Still unstable? ", support_link: "Contact support →",
+      footer_prefix: "Measured using ", footer_link: "LibreSpeed",
+      log_title: "Kinescope · Connection Check",
+      log_date: "Date:", log_download: "Download:", log_upload: "Upload:", log_ping: "Ping:", log_jitter: "Jitter:",
+      log_ip: "IP:", log_provider: "Provider:", log_city: "City/Region:", log_browser: "Browser:",
+      log_os: "OS:", log_screen: "Screen:", log_conn: "Connection:", log_page: "Page:"
+    },
+    nl: {
+      title: "Verbindingstest — Kinescope",
+      h1: "Verbindingstest",
+      subtitle: "Een snelle check voordat u live gaat of een gesprek voert — bekijk uw snelheid, latency en alles wat de belkwaliteit kan beïnvloeden.",
+      step_ip: "IP", step_ping: "Ping", step_dl: "Download", step_ul: "Upload",
+      gauge_ready: "Klaar om te testen", gauge_latency: "Latency",
+      unit_mbps: "Mbps", unit_ms: "ms",
+      btn_start: "Start test", btn_stop: "Stoppen",
+      comment_idle: "Klik op “Start test” om de snelheid en stabiliteit van uw verbinding te meten.",
+      comment_start: "We bepalen uw netwerkomgeving…",
+      comment_dl: "We meten de downloadsnelheid — dit beïnvloedt de kwaliteit van binnenkomende video.",
+      comment_ping: "We controleren de latency en de schommelingen daarin — dit beïnvloedt hoe soepel uw gesprekken verlopen.",
+      comment_ul: "We meten de uploadsnelheid — dit bepaalt hoe stabiel uw stream zal zijn.",
+      comment_abort: "Test gestopt.",
+      metric_ping: "Ping", metric_jitter: "Jitter", metric_download: "Download", metric_upload: "Upload",
+      verdict_excellent: "<strong>Uitstekende verbinding.</strong> Geschikt voor een live Full HD-stream en video-oproepen zonder problemen.",
+      verdict_good: "<strong>Goede verbinding.</strong> Voldoende voor een HD-stream en stabiele video-oproepen.",
+      verdict_warning: "<strong>Onstabiele verbinding.</strong> Ga voor streaming beter naar SD — gesprekken kunnen haperen of vastlopen.",
+      verdict_poor: "<strong>Zwakke verbinding.</strong> Grote kans op onderbrekingen en vastlopers — stel de stream of het gesprek beter uit.",
+      sysinfo_title: "Over uw verbinding",
+      sysinfo_ip: "IP-adres", sysinfo_provider: "Provider", sysinfo_city: "Stad / regio",
+      sysinfo_browser: "Browser", sysinfo_os: "Besturingssysteem", sysinfo_screen: "Schermresolutie", sysinfo_conn: "Verbindingstype",
+      copy_btn: "Log kopiëren voor support", copy_done: "Gekopieerd ✓",
+      support_text: "Nog steeds onstabiel? ", support_link: "Neem contact op met support →",
+      footer_prefix: "Gemeten met ", footer_link: "LibreSpeed",
+      log_title: "Kinescope · Verbindingstest",
+      log_date: "Datum:", log_download: "Download:", log_upload: "Upload:", log_ping: "Ping:", log_jitter: "Jitter:",
+      log_ip: "IP:", log_provider: "Provider:", log_city: "Stad/regio:", log_browser: "Browser:",
+      log_os: "OS:", log_screen: "Scherm:", log_conn: "Verbinding:", log_page: "Pagina:"
+    },
+    ja: {
+      title: "接続テスト — Kinescope",
+      h1: "接続テスト",
+      subtitle: "配信や通話の前にすばやく確認 — 速度や遅延など、通話品質に影響する項目をまとめて表示します。",
+      step_ip: "IP", step_ping: "Ping", step_dl: "ダウンロード", step_ul: "アップロード",
+      gauge_ready: "テストの準備ができました", gauge_latency: "遅延",
+      unit_mbps: "Mbps", unit_ms: "ms",
+      btn_start: "テストを開始", btn_stop: "停止",
+      comment_idle: "「テストを開始」をクリックすると、接続の速度と安定性を測定します。",
+      comment_start: "ネットワーク環境を確認しています…",
+      comment_dl: "ダウンロード速度を測定しています — 受信する映像の品質に影響します。",
+      comment_ping: "遅延とその変動を確認しています — 通話の滑らかさに影響します。",
+      comment_ul: "アップロード速度を測定しています — 配信の安定性に影響します。",
+      comment_abort: "テストを停止しました。",
+      metric_ping: "Ping", metric_jitter: "ジッター", metric_download: "ダウンロード", metric_upload: "アップロード",
+      verdict_excellent: "<strong>非常に良好な接続です。</strong> フルHDでのライブ配信やビデオ通話も問題なく行えます。",
+      verdict_good: "<strong>良好な接続です。</strong> HD配信や安定したビデオ通話に十分な品質です。",
+      verdict_warning: "<strong>接続が不安定です。</strong> 配信はSD画質がおすすめです。通話が途切れる場合があります。",
+      verdict_poor: "<strong>接続が弱いです。</strong> 切断やフリーズのリスクが高いため、配信や通話は延期をおすすめします。",
+      sysinfo_title: "接続情報",
+      sysinfo_ip: "IPアドレス", sysinfo_provider: "プロバイダー", sysinfo_city: "都市 / 地域",
+      sysinfo_browser: "ブラウザ", sysinfo_os: "OS", sysinfo_screen: "画面解像度", sysinfo_conn: "接続タイプ",
+      copy_btn: "サポート用ログをコピー", copy_done: "コピーしました ✓",
+      support_text: "それでも不安定な場合は ", support_link: "サポートに連絡 →",
+      footer_prefix: "測定エンジン: ", footer_link: "LibreSpeed",
+      log_title: "Kinescope · 接続テスト",
+      log_date: "日時:", log_download: "ダウンロード:", log_upload: "アップロード:", log_ping: "Ping:", log_jitter: "ジッター:",
+      log_ip: "IP:", log_provider: "プロバイダー:", log_city: "都市/地域:", log_browser: "ブラウザ:",
+      log_os: "OS:", log_screen: "画面:", log_conn: "接続:", log_page: "ページ:"
+    },
+    pt: {
+      title: "Teste de Conexão — Kinescope",
+      h1: "Teste de conexão",
+      subtitle: "Um teste rápido antes de uma transmissão ou chamada — veja sua velocidade, latência e tudo o que pode afetar a qualidade da conexão.",
+      step_ip: "IP", step_ping: "Ping", step_dl: "Download", step_ul: "Upload",
+      gauge_ready: "Pronto para testar", gauge_latency: "Latência",
+      unit_mbps: "Mbps", unit_ms: "ms",
+      btn_start: "Iniciar teste", btn_stop: "Parar",
+      comment_idle: "Clique em “Iniciar teste” para medir a velocidade e a estabilidade da sua conexão.",
+      comment_start: "Identificando seu ambiente de rede…",
+      comment_dl: "Medindo a velocidade de download — isso afeta a qualidade do vídeo recebido.",
+      comment_ping: "Verificando a latência e sua variação — isso afeta a fluidez das suas chamadas.",
+      comment_ul: "Medindo a velocidade de upload — isso determina a estabilidade da sua transmissão.",
+      comment_abort: "Teste interrompido.",
+      metric_ping: "Ping", metric_jitter: "Jitter", metric_download: "Download", metric_upload: "Upload",
+      verdict_excellent: "<strong>Conexão excelente.</strong> Suporta transmissão em Full HD e chamadas de vídeo sem problemas.",
+      verdict_good: "<strong>Boa conexão.</strong> Suficiente para transmissão em HD e chamadas de vídeo estáveis.",
+      verdict_warning: "<strong>Conexão instável.</strong> Para transmitir, reduza para SD — as chamadas podem travar ou congelar.",
+      verdict_poor: "<strong>Conexão fraca.</strong> Alto risco de quedas e congelamentos — é melhor adiar a transmissão ou a chamada.",
+      sysinfo_title: "Sobre sua conexão",
+      sysinfo_ip: "Endereço IP", sysinfo_provider: "Provedor", sysinfo_city: "Cidade / Região",
+      sysinfo_browser: "Navegador", sysinfo_os: "Sistema operacional", sysinfo_screen: "Resolução de tela", sysinfo_conn: "Tipo de conexão",
+      copy_btn: "Copiar registro para o suporte", copy_done: "Copiado ✓",
+      support_text: "Ainda instável? ", support_link: "Fale com o suporte →",
+      footer_prefix: "Medido com ", footer_link: "LibreSpeed",
+      log_title: "Kinescope · Teste de Conexão",
+      log_date: "Data:", log_download: "Download:", log_upload: "Upload:", log_ping: "Ping:", log_jitter: "Jitter:",
+      log_ip: "IP:", log_provider: "Provedor:", log_city: "Cidade/Região:", log_browser: "Navegador:",
+      log_os: "SO:", log_screen: "Tela:", log_conn: "Conexão:", log_page: "Página:"
+    }
+  };
+
+  var VERDICT_CLASS = {
+    excellent: "callout-green",
+    good: "callout-green",
+    warning: "callout-orange",
+    poor: "callout-red"
+  };
+
+  var SUPPORTED = LANGS.map(function (l) { return l.code; });
+  var currentLang = (function () {
+    var saved = null;
+    try { saved = localStorage.getItem("kinescope_speedtest_lang"); } catch (e) {}
+    return SUPPORTED.indexOf(saved) !== -1 ? saved : "en";
+  })();
+
+  function t(key) {
+    return (STRINGS[currentLang] && STRINGS[currentLang][key]) || STRINGS.en[key] || "";
+  }
+
+  var els = {
+    langSwitch: document.getElementById("langSwitch"),
+    langBtn:    document.getElementById("langBtn"),
+    langLabel:  document.getElementById("langLabel"),
+    langMenu:   document.getElementById("langMenu"),
+    startBtn:   document.getElementById("startBtn"),
+    copyBtn:    document.getElementById("copyBtn"),
+    comment:    document.getElementById("comment"),
+    gauge:      document.getElementById("gauge"),
+    gaugeValue: document.getElementById("gaugeValue"),
+    gaugeUnit:  document.getElementById("gaugeUnit"),
+    gaugeLabel: document.getElementById("gaugeLabel"),
+    verdict:    document.getElementById("verdict"),
+    mPing:      document.getElementById("mPing"),
+    mJitter:    document.getElementById("mJitter"),
+    mDown:      document.getElementById("mDown"),
+    mUp:        document.getElementById("mUp"),
+    sIp:        document.getElementById("sIp"),
+    sIsp:       document.getElementById("sIsp"),
+    sCity:      document.getElementById("sCity"),
+    sBrowser:   document.getElementById("sBrowser"),
+    sOs:        document.getElementById("sOs"),
+    sScreen:    document.getElementById("sScreen"),
+    sConn:      document.getElementById("sConn"),
+    steps:      document.querySelectorAll("#steps .step")
+  };
+
+  function renderLangMenu() {
+    els.langMenu.innerHTML = "";
+    LANGS.filter(function (l) { return l.code !== currentLang; }).forEach(function (l) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "lang-option";
+      btn.textContent = l.label;
+      btn.addEventListener("click", function () {
+        setLang(l.code);
+        closeLangMenu();
+      });
+      els.langMenu.appendChild(btn);
+    });
+  }
+  function openLangMenu() { els.langSwitch.classList.add("open"); els.langBtn.setAttribute("aria-expanded", "true"); }
+  function closeLangMenu() { els.langSwitch.classList.remove("open"); els.langBtn.setAttribute("aria-expanded", "false"); }
+  els.langBtn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    els.langSwitch.classList.contains("open") ? closeLangMenu() : openLangMenu();
+  });
+  document.addEventListener("click", function (e) {
+    if (!els.langSwitch.contains(e.target)) closeLangMenu();
+  });
+
+  function setLang(code) {
+    currentLang = code;
+    try { localStorage.setItem("kinescope_speedtest_lang", code); } catch (e) {}
+    document.documentElement.lang = HTML_LANG[code] || code;
+    els.langLabel.textContent = LANGS.filter(function (l) { return l.code === code; })[0].label;
+    renderLangMenu();
+    applyI18n();
+  }
+
+  function applyI18n() {
+    document.title = t("title");
+    var nodes = document.querySelectorAll("[data-i18n]");
+    for (var i = 0; i < nodes.length; i++) {
+      nodes[i].textContent = t(nodes[i].getAttribute("data-i18n"));
+    }
+    els.startBtn.textContent = running ? t("btn_stop") : t("btn_start");
+    renderPhaseText();
+    if (verdictTier) renderVerdict();
+  }
+
+  // ── Formatting helpers ──
+  function fmt(n) {
+    n = Number(n);
+    if (!isFinite(n)) return "—";
+    if (n < 10) return n.toFixed(2);
+    if (n < 100) return n.toFixed(1);
+    return n.toFixed(0);
+  }
+  function speedToPct(mbps) {
+    mbps = Number(mbps) || 0;
+    return Math.max(0, Math.min(100, (1 - 1 / Math.pow(1.3, Math.sqrt(mbps))) * 100));
+  }
+  function pingToPct(ms) {
+    ms = Number(ms) || 0;
+    return Math.max(0, Math.min(100, (1 - Math.min(ms / 200, 1)) * 100));
+  }
+
+  // ── Smooth number tweening (growth/shrink animation for live readouts) ──
+  var animState = new WeakMap();
+  function animateNumber(el, target) {
+    target = Number(target) || 0;
+    var prev = animState.get(el);
+    var start = prev ? prev.value : 0;
+    if (prev && prev.raf) cancelAnimationFrame(prev.raf);
+    var startTime = null;
+    var duration = 350;
+    function step(ts) {
+      if (startTime === null) startTime = ts;
+      var tt = Math.min(1, (ts - startTime) / duration);
+      var eased = 1 - Math.pow(1 - tt, 3);
+      var value = start + (target - start) * eased;
+      el.textContent = fmt(value);
+      if (tt < 1) {
+        animState.set(el, { value: value, raf: requestAnimationFrame(step) });
+      } else {
+        animState.set(el, { value: target, raf: null });
+      }
+    }
+    animState.set(el, { value: start, raf: requestAnimationFrame(step) });
+  }
+  function resetNumber(el) {
+    var prev = animState.get(el);
+    if (prev && prev.raf) cancelAnimationFrame(prev.raf);
+    animState.delete(el);
+    el.textContent = "—";
+  }
+  function setMetric(el, value) {
+    if (value > 0) animateNumber(el, value);
+    else resetNumber(el);
+  }
+
+  // ── Browser / OS detection (lightweight, no external lib) ──
+  function detectEnv() {
+    var ua = navigator.userAgent;
+    var browser = "—", os = "—";
+
+    if (/Edg\//.test(ua)) browser = "Microsoft Edge";
+    else if (/OPR\//.test(ua)) browser = "Opera";
+    else if (/YaBrowser/.test(ua)) browser = "Yandex Browser";
+    else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = "Chrome";
+    else if (/Firefox\//.test(ua)) browser = "Firefox";
+    else if (/Safari\//.test(ua)) browser = "Safari";
+
+    if (/Windows NT/.test(ua)) os = "Windows";
+    else if (/Mac OS X/.test(ua)) os = "macOS";
+    else if (/Android/.test(ua)) os = "Android";
+    else if (/iPhone|iPad|iPod/.test(ua)) os = "iOS";
+    else if (/Linux/.test(ua)) os = "Linux";
+
+    return { browser: browser, os: os };
+  }
+
+  function fillSystemInfo() {
+    var env = detectEnv();
+    els.sBrowser.textContent = env.browser;
+    els.sOs.textContent = env.os;
+    var dpr = window.devicePixelRatio || 1;
+    var physW = Math.round(screen.width * dpr);
+    var physH = Math.round(screen.height * dpr);
+    els.sScreen.textContent = physW + " × " + physH + " px" + (dpr !== 1 ? " (" + dpr + "x)" : "");
+    var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    els.sConn.textContent = conn && (conn.effectiveType || conn.type) ? (conn.effectiveType || conn.type) : "—";
+  }
+
+  function fetchIpInfo() {
+    fetch(BACKEND + "getIP.php?isp=true&distance=km&r=" + Math.random())
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var info = data && data.rawIspInfo ? data.rawIspInfo : {};
+        els.sIp.textContent = info.ip || (data && data.processedString) || "—";
+        els.sIsp.textContent = info.org || "—";
+        var city = [info.city, info.region, info.country].filter(Boolean).join(", ");
+        els.sCity.textContent = city || "—";
+        window.__lastIpInfo = info;
+      })
+      .catch(function () { /* geo lookup unavailable — leave placeholders */ });
+  }
+
+  function setStep(activePhase, done) {
+    els.steps.forEach(function (el) {
+      var phase = el.getAttribute("data-phase");
+      el.classList.remove("active", "done");
+      if (done.indexOf(phase) !== -1) el.classList.add("done");
+      if (phase === String(activePhase)) el.classList.add("active");
+    });
+  }
+
+  // ── Verdict logic (broadcast / call oriented) ──
+  function classify(dl, ul, ping, jitter) {
+    if (ul >= 8 && ping <= 60 && jitter <= 20) return "excellent";
+    if (ul >= 4 && ping <= 120 && jitter <= 40) return "good";
+    if (ul >= 1.5) return "warning";
+    return "poor";
+  }
+
+  // ── Speedtest setup ──
+  var s = new Speedtest();
+  s.setParameter("test_order", "IP_P_D_U");
+  s.setParameter("telemetry_level", 0);
+  s.setParameter("url_dl", BACKEND + "garbage.php");
+  s.setParameter("url_ul", BACKEND + "empty.php");
+  s.setParameter("url_ping", BACKEND + "empty.php");
+  s.setParameter("url_getIp", BACKEND + "getIP.php");
+
+  var running = false;
+  var lastData = null;
+  var lastGaugePhase = null;
+  var uiPhase = "idle"; // idle | start | ping | dl | ul | done | aborted
+  var verdictTier = null;
+  var lastGaugeLabelKey = "gauge_ready";
+  var lastGaugeUnitKey = "unit_mbps";
+
+  function setGaugeLabel(key) { lastGaugeLabelKey = key; els.gaugeLabel.textContent = t(key); }
+  function setGaugeUnit(key) { lastGaugeUnitKey = key; els.gaugeUnit.textContent = t(key); }
+
+  function renderPhaseText() {
+    if (uiPhase === "idle") {
+      els.comment.textContent = t("comment_idle");
+      setGaugeLabel("gauge_ready");
+      setGaugeUnit("unit_mbps");
+    } else if (uiPhase === "start") {
+      els.comment.textContent = t("comment_start");
+    } else if (uiPhase === "ping") {
+      els.comment.textContent = t("comment_ping");
+      setGaugeLabel("gauge_latency");
+      setGaugeUnit("unit_ms");
+    } else if (uiPhase === "dl") {
+      els.comment.textContent = t("comment_dl");
+      setGaugeLabel("metric_download");
+      setGaugeUnit("unit_mbps");
+    } else if (uiPhase === "ul") {
+      els.comment.textContent = t("comment_ul");
+      setGaugeLabel("metric_upload");
+      setGaugeUnit("unit_mbps");
+    } else if (uiPhase === "done") {
+      els.comment.textContent = "";
+      els.gaugeLabel.textContent = t(lastGaugeLabelKey);
+      els.gaugeUnit.textContent = t(lastGaugeUnitKey);
+    } else if (uiPhase === "aborted") {
+      els.comment.textContent = t("comment_abort");
+      els.gaugeLabel.textContent = t(lastGaugeLabelKey);
+      els.gaugeUnit.textContent = t(lastGaugeUnitKey);
+    }
+  }
+
+  function resetUI() {
+    resetNumber(els.gaugeValue);
+    els.gauge.style.setProperty("--pct", 0);
+    els.gauge.classList.remove("running", "done");
+    lastGaugePhase = null;
+    uiPhase = "idle";
+    verdictTier = null;
+    resetNumber(els.mPing);
+    resetNumber(els.mJitter);
+    resetNumber(els.mDown);
+    resetNumber(els.mUp);
+    els.verdict.classList.remove("visible");
+    renderPhaseText();
+    setStep(-1, []);
+  }
+
+  function updateFromData(data) {
+    lastData = data;
+    setMetric(els.mPing, data.pingStatus);
+    setMetric(els.mJitter, data.jitterStatus);
+    setMetric(els.mDown, data.dlStatus);
+    setMetric(els.mUp, data.ulStatus);
+
+    var state = data.testState;
+    els.gauge.classList.add("running");
+
+    // resets the needle to 0 when the measurement phase changes (0=IP, 1=DL, 2=Ping, 3=UL)
+    // states 4 (finished) and 5 (aborted) don't reset — the gauge should keep the last result
+    if (state !== lastGaugePhase && state >= 0 && state <= 3) {
+      resetNumber(els.gaugeValue);
+      els.gauge.style.setProperty("--pct", 0);
+      lastGaugePhase = state;
+    }
+
+    if (state === 0) {
+      uiPhase = "start";
+      renderPhaseText();
+      setStep(0, []);
+    } else if (state === 2) {
+      uiPhase = "ping";
+      renderPhaseText();
+      animateNumber(els.gaugeValue, data.pingStatus);
+      els.gauge.style.setProperty("--pct", pingToPct(data.pingStatus));
+      setStep(2, ["0"]);
+    } else if (state === 1) {
+      uiPhase = "dl";
+      renderPhaseText();
+      animateNumber(els.gaugeValue, data.dlStatus);
+      els.gauge.style.setProperty("--pct", speedToPct(data.dlStatus));
+      setStep(1, ["0", "2"]);
+    } else if (state === 3) {
+      uiPhase = "ul";
+      renderPhaseText();
+      animateNumber(els.gaugeValue, data.ulStatus);
+      els.gauge.style.setProperty("--pct", speedToPct(data.ulStatus));
+      setStep(3, ["0", "2", "1"]);
+    }
+  }
+
+  function renderVerdict() {
+    els.verdict.className = "callout visible " + VERDICT_CLASS[verdictTier];
+    els.verdict.innerHTML = t("verdict_" + verdictTier);
+  }
+
+  function showVerdict(data) {
+    verdictTier = classify(Number(data.dlStatus), Number(data.ulStatus), Number(data.pingStatus), Number(data.jitterStatus));
+    renderVerdict();
+  }
+
+  function startStop() {
+    if (running) {
+      s.abort();
+      running = false;
+      els.startBtn.textContent = t("btn_start");
+      els.startBtn.classList.remove("running");
+      els.gauge.classList.remove("running");
+      uiPhase = "aborted";
+      renderPhaseText();
+      return;
+    }
+
+    resetUI();
+    running = true;
+    els.startBtn.textContent = t("btn_stop");
+    els.startBtn.classList.add("running");
+    fetchIpInfo();
+
+    s.onupdate = updateFromData;
+    s.onend = function (aborted) {
+      running = false;
+      els.startBtn.textContent = t("btn_start");
+      els.startBtn.classList.remove("running");
+      els.gauge.classList.remove("running");
+      if (!aborted && lastData) {
+        els.gauge.classList.add("done");
+        uiPhase = "done";
+        setStep(4, ["0", "2", "1", "3"]);
+        showVerdict(lastData);
+        renderPhaseText();
+      }
+    };
+    s.start();
+  }
+
+  els.startBtn.addEventListener("click", startStop);
+
+  // ── Copy log for support ──
+  function buildLog() {
+    var d = lastData || {};
+    var lines = [
+      t("log_title"),
+      t("log_date") + " " + new Date().toLocaleString(LOCALE[currentLang] || "en-US"),
+      "—",
+      t("log_download") + " " + (d.dlStatus > 0 ? fmt(d.dlStatus) + " " + t("unit_mbps") : "—"),
+      t("log_upload") + " " + (d.ulStatus > 0 ? fmt(d.ulStatus) + " " + t("unit_mbps") : "—"),
+      t("log_ping") + " " + (d.pingStatus > 0 ? fmt(d.pingStatus) + " " + t("unit_ms") : "—"),
+      t("log_jitter") + " " + (d.jitterStatus > 0 ? fmt(d.jitterStatus) + " " + t("unit_ms") : "—"),
+      "—",
+      t("log_ip") + " " + (els.sIp.textContent || "—"),
+      t("log_provider") + " " + (els.sIsp.textContent || "—"),
+      t("log_city") + " " + (els.sCity.textContent || "—"),
+      t("log_browser") + " " + els.sBrowser.textContent,
+      t("log_os") + " " + els.sOs.textContent,
+      t("log_screen") + " " + els.sScreen.textContent,
+      t("log_conn") + " " + els.sConn.textContent,
+      "—",
+      t("log_page") + " " + window.location.href
+    ];
+    return lines.join("\n");
+  }
+
+  els.copyBtn.addEventListener("click", function () {
+    var text = buildLog();
+    navigator.clipboard.writeText(text).then(function () {
+      els.copyBtn.textContent = t("copy_done");
+      els.copyBtn.classList.add("copied");
+      setTimeout(function () {
+        els.copyBtn.textContent = t("copy_btn");
+        els.copyBtn.classList.remove("copied");
+      }, 1800);
+    });
+  });
+
+  document.documentElement.lang = HTML_LANG[currentLang] || currentLang;
+  els.langLabel.textContent = LANGS.filter(function (l) { return l.code === currentLang; })[0].label;
+  renderLangMenu();
+  fillSystemInfo();
+  resetUI();
+  applyI18n();
+})();
+</script>
+</body>
+</html>

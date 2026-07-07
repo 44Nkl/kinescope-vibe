@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Проверка связи — Kinescope</title>
+<style>
+  @font-face {
+    font-family: 'TT Hoves Pro Compact';
+    src: url('fonts/TT_Hoves_Pro_Compact_Regular.woff2') format('woff2'),
+         url('fonts/TT_Hoves_Pro_Compact_Regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'TT Hoves Pro Compact';
+    src: url('fonts/TT_Hoves_Pro_Compact_Medium.woff2') format('woff2'),
+         url('fonts/TT_Hoves_Pro_Compact_Medium.woff') format('woff');
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:          #FCFCF7;
+    --card:        #FFFFFF;
+    --border:      #EFEDEA;
+    --text:        #000000;
+    --text-sec:    rgba(0,0,0,.4);
+    --accent:      #6B61FC;
+    --not-black:   #1A1A1A;
+    --track-empty: #EFEDEA;
+    --radius:      20px;
+  }
+
+  body {
+    font-family: 'TT Hoves Pro Compact', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 48px 24px 56px;
+  }
+
+  .page {
+    max-width: 560px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── Header ── */
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: -0.26px;
+    line-height: 1.05;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    font-size: 15px;
+    line-height: 1.4;
+    color: var(--text-sec);
+  }
+
+  /* ── Shared card ── */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 32px 28px;
+  }
+
+  /* ── Phase steps ── */
+  .steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 28px;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-sec);
+  }
+  .step-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--track-empty);
+    transition: background .2s ease;
+  }
+  .step.active .step-dot { background: var(--accent); }
+  .step.done .step-dot   { background: var(--not-black); }
+  .step.active { color: var(--text); }
+  .step-line {
+    width: 20px; height: 1.5px;
+    background: var(--track-empty);
+  }
+
+  /* ── Gauge ── */
+  @property --pct {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+  .gauge-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+  .gauge {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: conic-gradient(from -90deg, var(--accent) calc(var(--pct, 0) * 1%), rgba(0,0,0,.045) 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: .5;
+    transition: --pct .4s ease, opacity .3s ease;
+  }
+  .gauge.running,
+  .gauge.done { opacity: 1; }
+  .gauge.running { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(107,97,252,.0); }
+    50%      { box-shadow: 0 0 0 8px rgba(107,97,252,.06); }
+  }
+  .gauge-inner {
+    width: 178px;
+    height: 178px;
+    border-radius: 50%;
+    background: var(--card);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .gauge-value {
+    font-size: 40px;
+    font-weight: 500;
+    letter-spacing: -0.26px;
+    line-height: 1;
+  }
+  .gauge-unit {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-sec);
+    margin-top: 4px;
+  }
+  .gauge-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    margin-top: 10px;
+  }
+
+  /* ── Comment ── */
+  .comment {
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--text-sec);
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    margin-bottom: 24px;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.2;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    transition: background .2s ease, transform .1s ease, border-color .2s ease, color .2s ease;
+  }
+  .btn-primary {
+    background: var(--not-black);
+    color: #fff;
+  }
+  .btn-primary:hover  { background: #2a2a2a; }
+  .btn-primary:active { transform: scale(.98); }
+  .btn-primary.running {
+    background: rgba(196,57,43,.25);
+    color: #A82F23;
+  }
+  .btn-primary.running:hover { background: rgba(196,57,43,.35); }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text-sec);
+    border: 1.5px solid var(--border);
+  }
+  .btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .btn-secondary:active { transform: scale(.98); }
+  .btn-secondary.copied {
+    border-color: #7ECBA1;
+    color: #0A5C35;
+  }
+
+  /* ── Metrics grid ── */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .metric-tile {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 16px 10px;
+    text-align: center;
+  }
+  .metric-value {
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -0.2px;
+  }
+  .metric-unit {
+    font-size: 11px;
+    color: var(--text-sec);
+    margin-top: 2px;
+  }
+  .metric-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-sec);
+    margin-top: 8px;
+  }
+
+  /* ── Callout (verdict) ── */
+  .callout {
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.4;
+    display: none;
+  }
+  .callout strong { font-weight: 500; }
+  .callout.visible { display: block; }
+  .callout-green {
+    background: #EDFAF4;
+    border: 1.5px solid #7ECBA1;
+    color: #0A5C35;
+  }
+  .callout-orange {
+    background: #FFF7ED;
+    border: 1.5px solid #FDB87C;
+    color: #7C3A0A;
+  }
+  .callout-red {
+    background: #FDECEA;
+    border: 1.5px solid #F0908A;
+    color: #7A1F1F;
+  }
+
+  /* ── System info ── */
+  .sysinfo-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sysinfo-title {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: var(--text-sec);
+    margin-bottom: 6px;
+  }
+  .sysinfo-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14px;
+    line-height: 1.3;
+  }
+  .sysinfo-label { color: var(--text-sec); font-weight: 400; flex-shrink: 0; }
+  .sysinfo-value { font-weight: 500; color: var(--text); text-align: right; word-break: break-word; }
+
+  /* ── Actions row ── */
+  .actions-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .support-hint {
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.3;
+    color: var(--text-sec);
+    text-align: center;
+  }
+  .support-link {
+    color: var(--accent);
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .support-link:hover { text-decoration: underline; }
+
+  /* ── Footer ── */
+  .footer-credit {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-sec);
+    opacity: .7;
+  }
+  .footer-credit a { color: inherit; text-decoration: underline; }
+
+  @media (max-width: 480px) {
+    body { padding: 32px 16px 40px; }
+    .card { padding: 24px 18px; }
+    .gauge { width: 180px; height: 180px; }
+    .gauge-inner { width: 144px; height: 144px; }
+    .gauge-value { font-size: 32px; }
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    .step span.step-text { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div>
+    <div class="eyebrow">Kinescope</div>
+    <h1>Проверка связи</h1>
+    <p class="subtitle">Быстрый тест перед трансляцией или звонком — покажем скорость, задержку и всё остальное, что может повлиять на качество связи.</p>
+  </div>
+
+  <!-- Test card -->
+  <div class="card">
+    <div class="steps" id="steps">
+      <div class="step" data-phase="0"><span class="step-dot"></span><span class="step-text">IP</span></div>
+      <div class="step-line"></div>
+      <div class="step" data-phase="2"><span class="step-dot"></span><span class="step-text">Пинг</span></div>
+      <div class="step-line"></div>
+      <div class="step" data-phase="1"><span class="step-dot"></span><span class="step-text">Скачивание</span></div>
+      <div class="step-line"></div>
+      <div class="step" data-phase="3"><span class="step-dot"></span><span class="step-text">Отправка</span></div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge" id="gauge" style="--pct:0">
+        <div class="gauge-inner">
+          <div class="gauge-value" id="gaugeValue">—</div>
+          <div class="gauge-unit" id="gaugeUnit">Мбит/с</div>
+          <div class="gauge-label" id="gaugeLabel">Готово к проверке</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="comment" id="comment">Нажмите «Начать проверку», чтобы измерить скорость и стабильность соединения.</div>
+
+    <button class="btn btn-primary" id="startBtn">Начать проверку</button>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-grid">
+    <div class="metric-tile">
+      <div class="metric-value" id="mPing">—</div>
+      <div class="metric-unit">мс</div>
+      <div class="metric-label">Пинг</div>
+    </div>
+    <div class="metric-tile">
+      <div class="metric-value" id="mJitter">—</div>
+      <div class="metric-unit">мс</div>
+      <div class="metric-label">Джиттер</div>
+    </div>
+    <div class="metric-tile">
+      <div class="metric-value" id="mDown">—</div>
+      <div class="metric-unit">Мбит/с</div>
+      <div class="metric-label">Скачивание</div>
+    </div>
+    <div class="metric-tile">
+      <div class="metric-value" id="mUp">—</div>
+      <div class="metric-unit">Мбит/с</div>
+      <div class="metric-label">Отправка</div>
+    </div>
+  </div>
+
+  <!-- Verdict -->
+  <div class="callout" id="verdict"></div>
+
+  <!-- System info -->
+  <div class="card sysinfo-card">
+    <div class="sysinfo-title">О вашем соединении</div>
+    <div class="sysinfo-row"><span class="sysinfo-label">IP-адрес</span><span class="sysinfo-value" id="sIp">—</span></div>
+    <div class="sysinfo-row"><span class="sysinfo-label">Провайдер</span><span class="sysinfo-value" id="sIsp">—</span></div>
+    <div class="sysinfo-row"><span class="sysinfo-label">Город / регион</span><span class="sysinfo-value" id="sCity">—</span></div>
+    <div class="sysinfo-row"><span class="sysinfo-label">Браузер</span><span class="sysinfo-value" id="sBrowser">—</span></div>
+    <div class="sysinfo-row"><span class="sysinfo-label">Операционная система</span><span class="sysinfo-value" id="sOs">—</span></div>
+    <div class="sysinfo-row"><span class="sysinfo-label">Разрешение экрана</span><span class="sysinfo-value" id="sScreen">—</span></div>
+    <div class="sysinfo-row"><span class="sysinfo-label">Тип соединения</span><span class="sysinfo-value" id="sConn">—</span></div>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions-row">
+    <button class="btn btn-secondary" id="copyBtn">Скопировать лог для поддержки</button>
+    <div class="support-hint">
+      Связь всё равно нестабильна?
+      <a href="https://t.me/kinescope_bot" target="_blank" rel="noopener noreferrer" class="support-link">Напишите в поддержку →</a>
+    </div>
+  </div>
+
+  <div class="footer-credit">Замер выполняется на базе <a href="https://github.com/librespeed/speedtest" target="_blank" rel="noopener noreferrer">LibreSpeed</a></div>
+
+</div>
+
+<script src="speedtest.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var BACKEND = "https://speedtest.kinescope.io/backend/";
+
+  var els = {
+    startBtn:   document.getElementById("startBtn"),
+    copyBtn:    document.getElementById("copyBtn"),
+    comment:    document.getElementById("comment"),
+    gauge:      document.getElementById("gauge"),
+    gaugeValue: document.getElementById("gaugeValue"),
+    gaugeUnit:  document.getElementById("gaugeUnit"),
+    gaugeLabel: document.getElementById("gaugeLabel"),
+    verdict:    document.getElementById("verdict"),
+    mPing:      document.getElementById("mPing"),
+    mJitter:    document.getElementById("mJitter"),
+    mDown:      document.getElementById("mDown"),
+    mUp:        document.getElementById("mUp"),
+    sIp:        document.getElementById("sIp"),
+    sIsp:       document.getElementById("sIsp"),
+    sCity:      document.getElementById("sCity"),
+    sBrowser:   document.getElementById("sBrowser"),
+    sOs:        document.getElementById("sOs"),
+    sScreen:    document.getElementById("sScreen"),
+    sConn:      document.getElementById("sConn"),
+    steps:      document.querySelectorAll("#steps .step")
+  };
+
+  // ── Formatting helpers ──
+  function fmt(n) {
+    n = Number(n);
+    if (!isFinite(n)) return "—";
+    if (n < 10) return n.toFixed(2);
+    if (n < 100) return n.toFixed(1);
+    return n.toFixed(0);
+  }
+  function speedToPct(mbps) {
+    mbps = Number(mbps) || 0;
+    return Math.max(0, Math.min(100, (1 - 1 / Math.pow(1.3, Math.sqrt(mbps))) * 100));
+  }
+  function pingToPct(ms) {
+    ms = Number(ms) || 0;
+    return Math.max(0, Math.min(100, (1 - Math.min(ms / 200, 1)) * 100));
+  }
+
+  // ── Smooth number tweening (growth/shrink animation for live readouts) ──
+  var animState = new WeakMap();
+  function animateNumber(el, target) {
+    target = Number(target) || 0;
+    var prev = animState.get(el);
+    var start = prev ? prev.value : 0;
+    if (prev && prev.raf) cancelAnimationFrame(prev.raf);
+    var startTime = null;
+    var duration = 350;
+    function step(ts) {
+      if (startTime === null) startTime = ts;
+      var t = Math.min(1, (ts - startTime) / duration);
+      var eased = 1 - Math.pow(1 - t, 3);
+      var value = start + (target - start) * eased;
+      el.textContent = fmt(value);
+      if (t < 1) {
+        animState.set(el, { value: value, raf: requestAnimationFrame(step) });
+      } else {
+        animState.set(el, { value: target, raf: null });
+      }
+    }
+    animState.set(el, { value: start, raf: requestAnimationFrame(step) });
+  }
+  function resetNumber(el) {
+    var prev = animState.get(el);
+    if (prev && prev.raf) cancelAnimationFrame(prev.raf);
+    animState.delete(el);
+    el.textContent = "—";
+  }
+  function setMetric(el, value) {
+    if (value > 0) animateNumber(el, value);
+    else resetNumber(el);
+  }
+
+  // ── Browser / OS detection (lightweight, no external lib) ──
+  function detectEnv() {
+    var ua = navigator.userAgent;
+    var browser = "—", os = "—";
+
+    if (/Edg\//.test(ua)) browser = "Microsoft Edge";
+    else if (/OPR\//.test(ua)) browser = "Opera";
+    else if (/YaBrowser/.test(ua)) browser = "Яндекс Браузер";
+    else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = "Chrome";
+    else if (/Firefox\//.test(ua)) browser = "Firefox";
+    else if (/Safari\//.test(ua)) browser = "Safari";
+
+    if (/Windows NT/.test(ua)) os = "Windows";
+    else if (/Mac OS X/.test(ua)) os = "macOS";
+    else if (/Android/.test(ua)) os = "Android";
+    else if (/iPhone|iPad|iPod/.test(ua)) os = "iOS";
+    else if (/Linux/.test(ua)) os = "Linux";
+
+    return { browser: browser, os: os };
+  }
+
+  function fillSystemInfo() {
+    var env = detectEnv();
+    els.sBrowser.textContent = env.browser;
+    els.sOs.textContent = env.os;
+    var dpr = window.devicePixelRatio || 1;
+    var physW = Math.round(screen.width * dpr);
+    var physH = Math.round(screen.height * dpr);
+    els.sScreen.textContent = physW + " × " + physH + " px" + (dpr !== 1 ? " (" + dpr + "x)" : "");
+    var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    els.sConn.textContent = conn && (conn.effectiveType || conn.type) ? (conn.effectiveType || conn.type) : "—";
+  }
+
+  function fetchIpInfo() {
+    fetch(BACKEND + "getIP.php?isp=true&distance=km&r=" + Math.random())
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var info = data && data.rawIspInfo ? data.rawIspInfo : {};
+        els.sIp.textContent = info.ip || (data && data.processedString) || "—";
+        els.sIsp.textContent = info.org || "—";
+        var city = [info.city, info.region, info.country].filter(Boolean).join(", ");
+        els.sCity.textContent = city || "—";
+        window.__lastIpInfo = info;
+      })
+      .catch(function () { /* сеть недоступна для запроса геоданных — оставляем «—» */ });
+  }
+
+  // ── Comments per phase ──
+  var COMMENTS = {
+    idle:  "Нажмите «Начать проверку», чтобы измерить скорость и стабильность соединения.",
+    start: "Определяем ваше сетевое окружение…",
+    dl:    "Замеряем скорость входящего соединения — от неё зависит качество получаемой картинки.",
+    ping:  "Проверяем задержку и её колебания — они отвечают за плавность видеозвонков.",
+    ul:    "Замеряем скорость исходящего соединения — именно она определяет устойчивость вашей трансляции.",
+    abort: "Проверка остановлена."
+  };
+
+  function setStep(activePhase, done) {
+    els.steps.forEach(function (el) {
+      var phase = el.getAttribute("data-phase");
+      el.classList.remove("active", "done");
+      if (done.indexOf(phase) !== -1) el.classList.add("done");
+      if (phase === String(activePhase)) el.classList.add("active");
+    });
+  }
+
+  // ── Verdict logic (broadcast / call oriented) ──
+  function classify(dl, ul, ping, jitter) {
+    if (ul >= 8 && ping <= 60 && jitter <= 20) return "excellent";
+    if (ul >= 4 && ping <= 120 && jitter <= 40) return "good";
+    if (ul >= 1.5) return "warning";
+    return "poor";
+  }
+  var VERDICTS = {
+    excellent: { cls: "callout-green",  text: "<strong>Отличная связь.</strong> Держит прямой эфир в Full HD и видеозвонки без сбоев." },
+    good:      { cls: "callout-green",  text: "<strong>Хорошая связь.</strong> Достаточно для эфира в HD и стабильных видеозвонков." },
+    warning:   { cls: "callout-orange", text: "<strong>Связь нестабильна.</strong> Для трансляции лучше снизить качество до SD — в звонках возможны подвисания." },
+    poor:      { cls: "callout-red",    text: "<strong>Слабая связь.</strong> Высок риск обрывов и заморозок — трансляцию или звонок лучше отложить." }
+  };
+
+  // ── Speedtest setup ──
+  var s = new Speedtest();
+  s.setParameter("test_order", "IP_P_D_U");
+  s.setParameter("telemetry_level", 0);
+  s.setParameter("url_dl", BACKEND + "garbage.php");
+  s.setParameter("url_ul", BACKEND + "empty.php");
+  s.setParameter("url_ping", BACKEND + "empty.php");
+  s.setParameter("url_getIp", BACKEND + "getIP.php");
+
+  var running = false;
+  var lastData = null;
+  var lastGaugePhase = null;
+
+  function resetUI() {
+    resetNumber(els.gaugeValue);
+    els.gaugeUnit.textContent = "Мбит/с";
+    els.gaugeLabel.textContent = "Готово к проверке";
+    els.gauge.style.setProperty("--pct", 0);
+    els.gauge.classList.remove("running", "done");
+    lastGaugePhase = null;
+    resetNumber(els.mPing);
+    resetNumber(els.mJitter);
+    resetNumber(els.mDown);
+    resetNumber(els.mUp);
+    els.verdict.classList.remove("visible");
+    els.comment.textContent = COMMENTS.idle;
+    setStep(-1, []);
+  }
+
+  function updateFromData(data) {
+    lastData = data;
+    setMetric(els.mPing, data.pingStatus);
+    setMetric(els.mJitter, data.jitterStatus);
+    setMetric(els.mDown, data.dlStatus);
+    setMetric(els.mUp, data.ulStatus);
+
+    var state = data.testState;
+    els.gauge.classList.add("running");
+
+    // сбрасываем стрелку в 0 при переходе между фазами замера (0=IP, 1=DL, 2=Ping, 3=UL)
+    // состояния 4 (завершено) и 5 (прервано) не сбрасывают — гейдж должен сохранить последний результат
+    if (state !== lastGaugePhase && state >= 0 && state <= 3) {
+      resetNumber(els.gaugeValue);
+      els.gauge.style.setProperty("--pct", 0);
+      lastGaugePhase = state;
+    }
+
+    if (state === 0) {
+      els.comment.textContent = COMMENTS.start;
+      setStep(0, []);
+    } else if (state === 2) {
+      els.comment.textContent = COMMENTS.ping;
+      animateNumber(els.gaugeValue, data.pingStatus);
+      els.gaugeUnit.textContent = "мс";
+      els.gaugeLabel.textContent = "Задержка";
+      els.gauge.style.setProperty("--pct", pingToPct(data.pingStatus));
+      setStep(2, ["0"]);
+    } else if (state === 1) {
+      els.comment.textContent = COMMENTS.dl;
+      animateNumber(els.gaugeValue, data.dlStatus);
+      els.gaugeUnit.textContent = "Мбит/с";
+      els.gaugeLabel.textContent = "Скачивание";
+      els.gauge.style.setProperty("--pct", speedToPct(data.dlStatus));
+      setStep(1, ["0", "2"]);
+    } else if (state === 3) {
+      els.comment.textContent = COMMENTS.ul;
+      animateNumber(els.gaugeValue, data.ulStatus);
+      els.gaugeUnit.textContent = "Мбит/с";
+      els.gaugeLabel.textContent = "Отправка";
+      els.gauge.style.setProperty("--pct", speedToPct(data.ulStatus));
+      setStep(3, ["0", "2", "1"]);
+    }
+  }
+
+  function showVerdict(data) {
+    var tier = classify(Number(data.dlStatus), Number(data.ulStatus), Number(data.pingStatus), Number(data.jitterStatus));
+    var v = VERDICTS[tier];
+    els.verdict.className = "callout visible " + v.cls;
+    els.verdict.innerHTML = v.text;
+    return tier;
+  }
+
+  function startStop() {
+    if (running) {
+      s.abort();
+      running = false;
+      els.startBtn.textContent = "Начать проверку";
+      els.startBtn.classList.remove("running");
+      els.gauge.classList.remove("running");
+      els.comment.textContent = COMMENTS.abort;
+      return;
+    }
+
+    resetUI();
+    running = true;
+    els.startBtn.textContent = "Остановить";
+    els.startBtn.classList.add("running");
+    fetchIpInfo();
+
+    s.onupdate = updateFromData;
+    s.onend = function (aborted) {
+      running = false;
+      els.startBtn.textContent = "Начать проверку";
+      els.startBtn.classList.remove("running");
+      els.gauge.classList.remove("running");
+      if (!aborted && lastData) {
+        els.gauge.classList.add("done");
+        setStep(4, ["0", "2", "1", "3"]);
+        showVerdict(lastData);
+        els.comment.textContent = "";
+      }
+    };
+    s.start();
+  }
+
+  els.startBtn.addEventListener("click", startStop);
+
+  // ── Copy log for support ──
+  function buildLog() {
+    var d = lastData || {};
+    var ip = window.__lastIpInfo || {};
+    var lines = [
+      "Kinescope · Проверка связи",
+      "Дата: " + new Date().toLocaleString("ru-RU"),
+      "—",
+      "Скачивание: " + (d.dlStatus > 0 ? fmt(d.dlStatus) + " Мбит/с" : "—"),
+      "Отправка: " + (d.ulStatus > 0 ? fmt(d.ulStatus) + " Мбит/с" : "—"),
+      "Пинг: " + (d.pingStatus > 0 ? fmt(d.pingStatus) + " мс" : "—"),
+      "Джиттер: " + (d.jitterStatus > 0 ? fmt(d.jitterStatus) + " мс" : "—"),
+      "—",
+      "IP: " + (els.sIp.textContent || "—"),
+      "Провайдер: " + (els.sIsp.textContent || "—"),
+      "Город/регион: " + (els.sCity.textContent || "—"),
+      "Браузер: " + els.sBrowser.textContent,
+      "ОС: " + els.sOs.textContent,
+      "Экран: " + els.sScreen.textContent,
+      "Соединение: " + els.sConn.textContent,
+      "—",
+      "Страница: " + window.location.href
+    ];
+    return lines.join("\n");
+  }
+
+  els.copyBtn.addEventListener("click", function () {
+    var text = buildLog();
+    navigator.clipboard.writeText(text).then(function () {
+      var original = els.copyBtn.textContent;
+      els.copyBtn.textContent = "Скопировано ✓";
+      els.copyBtn.classList.add("copied");
+      setTimeout(function () {
+        els.copyBtn.textContent = original;
+        els.copyBtn.classList.remove("copied");
+      }, 1800);
+    });
+  });
+
+  fillSystemInfo();
+  resetUI();
+})();
+</script>
+</body>
+</html>
